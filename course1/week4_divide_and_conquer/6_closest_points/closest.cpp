@@ -25,46 +25,47 @@ bool sortByY(const Coordinate &a, const Coordinate &b) {
   return (a.y < b.y); 
 } 
 
-double calculateDistance(int x1, int y1, int x2, int y2) {
-  int x1_minus_x2 = x1 - x2;
-  int x1_minus_x2_squared = x1_minus_x2 * x1_minus_x2;
-
-  int y1_minus_y2 = y1 - y2;
-  int y1_minus_y2_squared = y1_minus_y2 * y1_minus_y2;
-
-  int sum_of_sqaured_x_y = x1_minus_x2_squared + y1_minus_y2_squared;
-  double pythogorem = sqrt(sum_of_sqaured_x_y);
-  return pythogorem;
+double calculateDistance(const int &x1, const int &y1, const int &x2, const int &y2) {
+  double hypot = std::hypot(x1 - x2, y1 - y2);
+  return hypot;
 }
 
-vector<Coordinate> findElementsLessThanDistance(double distance, vector<Coordinate> coordinates, int midX) {
-  vector<Coordinate> result = {};
+// bool hasDuplicate(const vector<Coordinate> &coordinates, int size) {
+//   int index = 0;
+//   while(index < size) {
+//     if (coordinates[index].x == coordinates[index+1].x && coordinates[index].y == coordinates[index + 1].y) {
+//       return true;
+//     }
+//     index++;
+//     if(index == size - 1) {
+//       return false;
+//     }
+//   }
 
-  for(int i = 0; i < coordinates.size(); i++) {
-    Coordinate coordinate = coordinates[i];
-    if(abs(coordinate.x - midX) < distance) {
-      result.push_back(coordinate);
-    }
-  }
-  return result;
-}
+//   return false;
+// }
 
-double stripDistance(vector<Coordinate> &coordinates, double distance) {
+// double bruteForce(const vector<Coordinate> &coordinates, int size) {
+//   double result = MAXFLOAT;
+//   for(int i = 0; i < size; i++) {
+//     for(int j = i; j < size; j++) {
+//       if(i == j) { break; }
+//       double distance = calculateDistance(coordinates[i].x, coordinates[i].y, coordinates[j].x, coordinates[j].y);
+//       if(distance < result) {       
+//         result = distance;
+//       }
+//     }
+//   }
+//   return result;
+// }
+
+double stripDistance(const vector<Coordinate> &coordinates, double distance, int size) {
   double result = distance;
-  double size = coordinates.size();
-  
-  sort(coordinates.begin(), coordinates.end(), sortByY);
 
-  for(int i = 0; i < size; ++i) {
-    int currentX = coordinates[i].x;
-    int currentY = coordinates[i].y;
-
-    for(int j = i + 1; j < size && ((coordinates[j].y - currentY) < distance); ++j) 
+  for(int i = 0; i < size; i++) {
+    for(int j = i + 1; j < size && abs((coordinates[j].y - coordinates[i].y) < distance); j++) 
     {
-      int nextX = coordinates[j].x;
-      int nextY = coordinates[j].y;
-      
-      double distance = calculateDistance(currentX, currentY, nextX, nextY);
+      double distance = calculateDistance(coordinates[i].x, coordinates[i].y, coordinates[j].x, coordinates[j].y);
       if(distance < result) {       
         result = distance;
       }
@@ -74,35 +75,40 @@ double stripDistance(vector<Coordinate> &coordinates, double distance) {
   return result;
 }
 
-double findClosestPair(const vector<Coordinate> &coordinates, int left, int right) {
-  double result = MAXFLOAT;
+double findClosestPair(const vector<Coordinate> &coordinatesXSorted, int left, int right, const vector<Coordinate> coordinatesYSorted) {
+  double result = -1;
   
   if(right <= left + 3) {
-    for(int i = left; i <= right - left; i++) {
-      int currentX = coordinates[i].x;
-      int currentY = coordinates[i].y;
-
-      for(int j = i; j <= right - left; j++) {
-        if(i == j) { break; }
-        int nextX = coordinates[j].x;
-        int nextY = coordinates[j].y;
+    for(int i = left; i <= right; i++) {
+      for(int j = i + 1; j <= right; j++) {
         
-        double distance = calculateDistance(currentX, currentY, nextX, nextY);
-        if(distance < result) {       
+        double distance = calculateDistance(coordinatesXSorted[i].x, coordinatesXSorted[i].y, coordinatesXSorted[j].x, coordinatesXSorted[j].y);
+        if(distance < result || result < 0) {       
           result = distance;
         }
+        
       }
     }
-
     return result;
   }
+  
+  int midX_index = left + ((right - left) / 2);
+  double distance_leftSubArr = findClosestPair(coordinatesXSorted, left, midX_index, coordinatesYSorted);
+  double distance_rightSubArr = findClosestPair(coordinatesXSorted, midX_index + 1, right, coordinatesYSorted);
+  result = min(distance_leftSubArr, distance_rightSubArr);
 
-  if(right > left) {
-    int midX_index = left + ((right - left) / 2);
-    int midX = coordinates[midX_index].x;
-    double distance_leftSubArr = findClosestPair(coordinates, left, midX_index);
-    double distance_rightSubArr = findClosestPair(coordinates, midX_index + 1, right);
-    result = min(distance_leftSubArr, distance_rightSubArr);
+  int midX = coordinatesXSorted[midX_index].x;
+  vector<Coordinate> stripCoordinates;
+  for(int i = 0; i < coordinatesYSorted.size(); i++) {
+    Coordinate coordinate = coordinatesYSorted[i];
+    if(abs(coordinate.x - midX) < result) {
+      stripCoordinates.push_back(coordinate);
+    }
+  }
+  int stripCoordinatesSize = stripCoordinates.size();
+  if( stripCoordinatesSize >= 2) {
+    double resultForYAxis = stripDistance(stripCoordinates, result, stripCoordinatesSize);
+    result = min(result, resultForYAxis);
   }
 
   return result;
@@ -110,32 +116,37 @@ double findClosestPair(const vector<Coordinate> &coordinates, int left, int righ
 
 double minimal_distance(vector<int> x, vector<int> y) {
   double result = MAXFLOAT;
-  vector<Coordinate> coordinates;
+  vector<Coordinate> coordinatesXSorted(x.size());
+  vector<Coordinate> coordinatesYSorted(y.size());
 
   for(int i = 0; i < x.size(); i++) {
-    Coordinate coordinate = Coordinate();
-    coordinate.x = x[i];
-    coordinate.y = y[i];
-    coordinates.push_back(coordinate);
+    Coordinate coordinate = { x[i], y[i] };
+    coordinatesXSorted[i] = coordinate;
+    coordinatesYSorted[i] = coordinate;
   }
 
-  sort(coordinates.begin(), coordinates.end(), sortByX);
-  result = findClosestPair(coordinates, 0, coordinates.size() - 1);
+  sort(coordinatesXSorted.begin(), coordinatesXSorted.end(), sortByX);
+  sort(coordinatesYSorted.begin(), coordinatesYSorted.end(), sortByY);
+  
+  // if(hasDuplicate(coordinates, coordinates.size())) { return 0; }
 
+  result = findClosestPair(coordinatesXSorted, 0, coordinatesXSorted.size() - 1, coordinatesYSorted);
+  
   // limiting coordinates to <-- -distance --- midPoint on X-axis -- +distance -->
-  int midX_index = (coordinates.size() - 1) / 2;
-  int midX = coordinates[midX_index].x;
-  vector< Coordinate > xCoordinatesLessThanResult;
-  for(int i = 0; i < coordinates.size(); i++) {
-    Coordinate coordinate = coordinates[i];
-    if(abs(coordinate.x - midX) < result) {
-      xCoordinatesLessThanResult.push_back(coordinate);
-    }
-  }
-  if(xCoordinatesLessThanResult.size() >= 2) {
-    double resultForYAxis = stripDistance(xCoordinatesLessThanResult, result);
-    result = min(result, resultForYAxis);
-  }
+  // int midX_index = (coordinates.size() - 1) / 2;
+  // int midX = coordinates[midX_index].x;
+  // vector<Coordinate> stripCoordinates;
+  // for(int i = 0; i < coordinates.size(); i++) {
+  //   Coordinate coordinate = coordinates[i];
+  //   if(abs(coordinate.x - midX) < result) {
+  //     stripCoordinates.push_back(coordinate);
+  //   }
+  // }
+  // if(stripCoordinates.size() >= 2) {
+  //   sort(stripCoordinates.begin(), stripCoordinates.end(), sortByY);
+  //   double resultForYAxis = stripDistance(stripCoordinates, result, stripCoordinates.size());
+  //   result = min(result, resultForYAxis);
+  // }
   
   return result;
 }
@@ -170,17 +181,17 @@ double naive_minimal_distance(vector<int> x, vector<int> y) {
 
 void test_solution() {
   while(true) {
-    int inputSize = rand() % 10000 + 2;
+    int inputSize = rand() % 5000 + 2;
     std::cout << inputSize << "\n";
 
     vector<int> x;
     vector<int> y;
 
     for(int i = 0; i < inputSize; i++) {
-      int randomX = (rand() % 10000) - (rand() % 10000);
+      int randomX = (rand() % 5000) - (rand() % 5000);
       x.push_back(randomX);
 
-      int randomY = (rand() % 10000) - (rand() % 10000);
+      int randomY = (rand() % 5000) - (rand() % 5000);
       y.push_back(randomY);
 
       // std::cout << randomX << " " << randomY << "\n";
@@ -212,8 +223,8 @@ void test_solution() {
 }
 
 void test_one_solution() {
-  vector<int> x = {2, -4, 2, 3, -1, -2};
-  vector<int> y = {-2, 0, 0, -3, 3, 0};  
+  vector<int> x = {-5, -7, -6, 8, 0, -6, 2, 3, 8 };
+  vector<int> y = {-9, 6, 0, -4, -4, -8, -2, -4, 7 };  
   double res = minimal_distance(x, y);
   std::cout << std::fixed;
   std::cout << std::setprecision(9) << res << "\n";
@@ -221,7 +232,7 @@ void test_one_solution() {
 
 int main() {
 
-  test_solution();
+  // test_solution();
   // test_one_solution();
 
   size_t n;
