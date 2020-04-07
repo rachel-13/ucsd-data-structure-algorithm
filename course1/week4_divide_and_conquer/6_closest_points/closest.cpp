@@ -14,7 +14,7 @@ using std::make_pair;
 
 struct Coordinate {
   public:
-  int x, y;
+  long long x, y;
 };
 
 bool sortByX(const Coordinate &a, const Coordinate &b) { 
@@ -25,8 +25,8 @@ bool sortByY(const Coordinate &a, const Coordinate &b) {
   return (a.y < b.y); 
 } 
 
-double calculateDistance(const int &x1, const int &y1, const int &x2, const int &y2) {
-  double hypot = sqrt(((x1-x2) * (x1-x2)) + ((y1-y2) * (y1-y2))); // std::hypot(x1 - x2, y1 - y2);
+double calculateDistance(const long long &x1, const long long &y1, const long long &x2, const long long &y2) {
+  double hypot = sqrt(((x1-x2) * (x1-x2)) + ((y1-y2) * (y1-y2))); 
   return hypot;
 }
 
@@ -95,7 +95,7 @@ double findClosestPair(const vector<Coordinate> &coordinatesXSorted, int left, i
   return result;
 }
 
-double minimal_distance(vector<int> x, vector<int> y) {
+double minimal_distance(vector<long long> x, vector<long long> y) {
   double result = MAXFLOAT;
   vector<Coordinate> coordinatesXSorted(x.size());
   vector<Coordinate> coordinatesYSorted(y.size());
@@ -114,16 +114,16 @@ double minimal_distance(vector<int> x, vector<int> y) {
   return result;
 }
 
-double naive_minimal_distance(vector<int> x, vector<int> y) {
+double naive_minimal_distance(vector<long long> x, vector<long long> y) {
   double result = -1.0000;
   
   for(int i = 0; i < x.size(); i++) {
-    int currentX = x[i];
-    int currentY = y[i];
+    long long currentX = x[i];
+    long long currentY = y[i];
 
     for(int j = 0; j < x.size(); j++) {
-      int nextX = x[j];
-      int nextY = y[j];
+      long long nextX = x[j];
+      long long nextY = y[j];
       if(i == j) {
         break;
       }
@@ -147,14 +147,14 @@ void test_solution() {
     int inputSize = rand() % 10000 + 2;
     std::cout << inputSize << "\n";
 
-    vector<int> x;
-    vector<int> y;
+    vector<long long> x;
+    vector<long long> y;
 
     for(int i = 0; i < inputSize; i++) {
-      int randomX = (rand() % 10000) - (rand() % 10000);
+      int randomX = (rand() % 1000000000) - (rand() % 1000000000);
       x.push_back(randomX);
 
-      int randomY = (rand() % 10000) - (rand() % 10000);
+      int randomY = (rand() % 1000000000) - (rand() % 1000000000);
       y.push_back(randomY);
 
       // std::cout << randomX << " " << randomY << "\n";
@@ -186,8 +186,8 @@ void test_solution() {
 }
 
 void test_one_solution() {
-  vector<int> x = {-5, -7, -6, 8, 0, -6, 2, 3, 8 };
-  vector<int> y = {-9, 6, 0, -4, -4, -8, -2, -4, 7 };  
+  vector<long long> x = {-5, -7, -6, 8, 0, -6, 2, 3, 8 };
+  vector<long long> y = {-9, 6, 0, -4, -4, -8, -2, -4, 7 };  
   double res = minimal_distance(x, y);
   std::cout << std::fixed;
   std::cout << std::setprecision(9) << res << "\n";
@@ -200,11 +200,11 @@ int main() {
 
   size_t n;
   std::cin >> n;
-  vector<int> x(n);
-  vector<int> y(n);
+  vector<long long> x(n);
+  vector<long long> y(n);
   for (size_t i = 0; i < n; i++) {
     std::cin >> x[i] >> y[i];
   }
   std::cout << std::fixed;
-  std::cout << std::setprecision(9) << minimal_distance(x, y) << "\n";
+  std::cout << std::setprecision(15) << minimal_distance(x, y) << "\n";
 }
