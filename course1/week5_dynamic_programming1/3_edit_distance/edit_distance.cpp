@@ -25,17 +25,17 @@ int edit_distance(const string &str1, const int &str1Length, const string &str2,
     table[0][j] = j;
   }
 
-  for(int j = 1; j < columns; j++ ) {
-    for(int i = 1; i < rows; i++ ) {
-      int insertion = table[i][j -1] + 1;
-      int deletion = table[i - 1][j] + 1;
-      int match = table[i - 1][j - 1];
-      int mismatch = table[i - 1][j - 1] + 1;
+  for(int c = 1; c < columns; c++ ) {
+    for(int r = 1; r < rows; r++ ) {
+      int insertion = table[r][c -1] + 1;
+      int deletion = table[r - 1][c] + 1;
+      int match = table[r - 1][c - 1];
+      int mismatch = table[r - 1][c - 1] + 1;
 
-      if(str1[i - 1] == str2[j - 1]) {
-        table[i][j] = std::min(insertion, std::min(deletion, match));
+      if(str1[r - 1] == str2[c - 1]) {
+        table[r][c] = std::min(insertion, std::min(deletion, match));
       } else {
-        table[i][j] = std::min(insertion, std::min(deletion, mismatch));
+        table[r][c] = std::min(insertion, std::min(deletion, mismatch));
       }
     }
   }
