@@ -3,30 +3,12 @@
 
 using std::vector;
 
-void removeFromVector(vector<int> &A, int target) {
-  for(int i = 0; i < A.size(); i++) {
-    if(A[i] == target) {
-      A.erase(A.begin() + i);
-      return;
-    }
-  }
-}
-
-bool isElementUnusued(vector<int> &A, int target) {
-  for(int i = 0; i < A.size(); i++) {
-    if(A[i] == target) {
-      return true;
-    }
-  }
-  return false;
-}
-
 int partition_dp(vector<int> &A, const int&n, const int &thresholdFor3EqualParts) {
   int result = 0;
   
   const int row = n + 1;
   const int col = thresholdFor3EqualParts + 1;
-  int table[7][5];
+  int table[row][col];
 
   for(int i = 0; i < row; i++) {
     table[i][0] = 0;
@@ -50,72 +32,7 @@ int partition_dp(vector<int> &A, const int&n, const int &thresholdFor3EqualParts
     }
   }
 
-  vector<int> source = A;
-
-  vector<int> part1 = {};
-  vector<int> part2 = {};
-  vector<int> part3 = {};
-
-  int element1 = A[n-1];
-  int element2 = A[n-2];
-  int element3 = A[n-3];
-
-  int part1_limit_pointer = thresholdFor3EqualParts;
-  int part1_value_pointer = n;
-
-  int part2_limit_pointer = thresholdFor3EqualParts;
-  int part2_value_pointer = n - 1;
-
-  int part3_limit_pointer = thresholdFor3EqualParts;
-  int part3_value_pointer = n - 2;
-
-
   if(table[n][thresholdFor3EqualParts] == thresholdFor3EqualParts) {
-  
-    while(source.size() > 0) {
-      if(table[part1_value_pointer - 1][part1_limit_pointer - element1] + element1 >= table[part1_value_pointer - 1][part1_limit_pointer] &&
-      isElementUnusued(source, element1) &&
-      table[part1_value_pointer - 1][part1_limit_pointer - element1] + element1 <= part1_limit_pointer) 
-      {
-          part1.push_back(element1);
-          removeFromVector(source, element1);
-          part1_limit_pointer = part1_limit_pointer - element1;
-          part1_value_pointer = part1_value_pointer - 1;
-          element1 = A[part1_value_pointer - 1]; 
-      } else {
-          part1_value_pointer = part1_value_pointer - 1;
-          element1 = A[part1_value_pointer - 1];
-      }
-
-      if(table[part2_value_pointer - 1][part2_limit_pointer - element2] + element2 >= table[part2_value_pointer - 1][part2_limit_pointer] &&
-        isElementUnusued(source, element2) &&
-        table[part2_value_pointer - 1][part2_limit_pointer - element2] + element2 <= part2_limit_pointer) 
-      {
-          part2.push_back(element2);
-          removeFromVector(source, element2);
-          part2_limit_pointer = part2_limit_pointer - element2;
-          part2_value_pointer = part2_value_pointer - 1;
-          element2 = A[part2_value_pointer - 1];
-      } else {
-        part2_value_pointer = part2_value_pointer - 1;
-        element2 = A[part2_value_pointer - 1];
-      }
-
-      if(table[part3_value_pointer - 1][part3_limit_pointer - element3] + element3 >= table[part3_value_pointer - 1][part3_limit_pointer] && 
-        isElementUnusued(source, element3) &&
-        table[part3_value_pointer - 1][part3_limit_pointer - element3] + element3 <= part3_limit_pointer) 
-      {
-          part3.push_back(element3);
-          removeFromVector(source, element3);
-          part3_limit_pointer = part3_limit_pointer - element3;
-          part3_value_pointer = part3_value_pointer - 1;
-          element3 = A[part3_value_pointer - 1];
-      } else {
-        part3_value_pointer = part3_value_pointer - 1;
-        element3 = A[part3_value_pointer - 1];
-      } 
-    }
-
     result = 1;
   }
 
