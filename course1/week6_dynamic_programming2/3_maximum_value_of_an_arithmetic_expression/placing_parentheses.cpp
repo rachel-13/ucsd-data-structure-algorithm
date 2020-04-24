@@ -10,11 +10,11 @@ using std::max;
 using std::min;
 
 struct Pair {
-  int min;
-  int max;
+  long long int min;
+  long long int max;
 };
 
-long long eval(long long a, char op, long long b) {
+long long int eval(long long int a, char op, long long int b) {
   if (op == '*') {
     return a * b;
   } else if (op == '+') {
@@ -26,16 +26,16 @@ long long eval(long long a, char op, long long b) {
   }
 }
 
-Pair minMax(int i, int j, vector<vector<int>> minTable, vector<vector<int>> maxTable, vector<char> ops) {
+Pair minMax(int i, int j, vector<vector<long long int>> minTable, vector<vector<long long int>> maxTable, vector<char> ops) {
   Pair pair = Pair();
-  int min = std::numeric_limits<int>::max();
-  int max = std::numeric_limits<int>::min();
+  long long int min = std::numeric_limits<long long int>::max();
+  long long int max = std::numeric_limits<long long int>::min();
 
   for(int k = i; k <= j - 1; k++) {
-    int a = eval(maxTable[i][k], ops[k], maxTable[k+1][j]);
-    int b = eval(maxTable[i][k], ops[k], minTable[k+1][j]);
-    int c = eval(minTable[i][k], ops[k], maxTable[k+1][j]);
-    int d = eval(minTable[i][k], ops[k], minTable[k+1][j]);
+    long long int a = eval(maxTable[i][k], ops[k], maxTable[k+1][j]);
+    long long int b = eval(maxTable[i][k], ops[k], minTable[k+1][j]);
+    long long int c = eval(minTable[i][k], ops[k], maxTable[k+1][j]);
+    long long int d = eval(minTable[i][k], ops[k], minTable[k+1][j]);
 
     min = std::min(min, std::min(a, std::min(b, std::min(c, d))));
     max = std::max(max, std::max(a, std::max(b, std::max(c, d))));
@@ -46,8 +46,8 @@ Pair minMax(int i, int j, vector<vector<int>> minTable, vector<vector<int>> maxT
   return pair;
 }
 
-long long get_maximum_value(const string &exp) {
-  int result = 0;
+long long int get_maximum_value(const string &exp) {
+  long long int result = 0;
   vector<int> digit;
   vector<char> ops;
 
@@ -63,8 +63,8 @@ long long get_maximum_value(const string &exp) {
   
   const int n = digit.size();
 
-  vector< vector<int> > minTable(n, vector<int>(n));
-  vector< vector<int> > maxTable(n, vector<int>(n));
+  vector< vector<long long int> > minTable(n, vector<long long int>(n));
+  vector< vector<long long int> > maxTable(n, vector<long long int>(n));
 
   for(int i = 0; i < n; i++) {
     minTable[i][i] = digit[i];
