@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <iostream>
 #include <vector>
+#include <queue> 
 #if defined(__unix__) || defined(__APPLE__)
 #include <sys/resource.h>
 #endif
@@ -24,7 +25,7 @@ public:
 };
 
 
-int main_with_large_stack_space() {
+int main_with_large_stack_space_naive() {
   std::ios_base::sync_with_stdio(0);
   int n;
   std::cin >> n;
@@ -46,6 +47,65 @@ int main_with_large_stack_space() {
     for (Node *v = &nodes[leaf_index]; v != NULL; v = v->parent)
       height++;
     maxHeight = std::max(maxHeight, height);
+  }
+    
+  std::cout << maxHeight << std::endl;
+  return 0;
+}
+
+bool isNodeVisited(std::vector<Node> visitedNodes, Node node) {
+  for(int i = 0; i < visitedNodes.size(); i++) {
+    if (visitedNodes[i].key == node.key) {
+      return true;
+    }
+  }
+  return false;
+}
+
+int main_with_large_stack_space() {
+  std::ios_base::sync_with_stdio(0);
+  int n;
+  std::cin >> n;
+
+  if (n <= 0) return 0;
+
+  std::vector<Node> nodes;
+  nodes.resize(n);
+  for (int child_index = 0; child_index < n; child_index++) {
+    int parent_index;
+    std::cin >> parent_index;
+    if (parent_index >= 0)
+      nodes[child_index].setParent(&nodes[parent_index]);
+    nodes[child_index].key = child_index;
+  }
+
+  Node rootNode;
+  for(int i = 0; i < n; i++) {
+    if(nodes[i].parent == NULL) {
+      rootNode = nodes[i];
+    }
+  }
+
+  int maxHeight = 0;
+  std::queue<Node> q;
+  q.push(rootNode);
+  while(!q.empty()) 
+  {
+    int qSize = q.size();
+    maxHeight++;
+
+    while (qSize > 0)
+    {
+      Node currentNode = q.front();
+      q.pop();
+      for(int i = 0; i < currentNode.children.size(); i++) {
+        Node currentChildNode = *currentNode.children[i];
+        q.push(currentChildNode);
+      }
+
+      qSize--;
+    }
+    
   }
     
   std::cout << maxHeight << std::endl;
