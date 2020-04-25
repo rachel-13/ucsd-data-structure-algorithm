@@ -31,15 +31,36 @@ int main() {
         char next = text[position];
 
         if (next == '(' || next == '[' || next == '{') {
-            // Process opening bracket, write your code here
-        }
+            Bracket openBracket = Bracket(next, position);
+            opening_brackets_stack.push(openBracket);
+        } else if (next == ')' || next == ']' || next == '}') {
+            if(opening_brackets_stack.empty()) {
+                Bracket closeBracket = Bracket(next, position);
+                opening_brackets_stack.push(closeBracket);
+                break;
+            };
 
-        if (next == ')' || next == ']' || next == '}') {
-            // Process closing bracket, write your code here
+            Bracket topOpenBracket = opening_brackets_stack.top();
+            opening_brackets_stack.pop();
+
+            if( (topOpenBracket.type == '(' && next != ')') || 
+                (topOpenBracket.type == '[' && next != ']') ||
+                (topOpenBracket.type == '{' && next != '}') ) 
+            {
+                Bracket closeBracket = Bracket(next, position);
+                opening_brackets_stack.push(closeBracket);
+                break;
+            }
+            
         }
     }
 
-    // Printing answer, write your code here
+    if (opening_brackets_stack.empty()) {
+        std::cout << "Success";
+    } else {
+        Bracket brokenBracket = opening_brackets_stack.top();
+        std::cout << brokenBracket.position + 1;
+    }
 
     return 0;
 }
