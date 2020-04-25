@@ -53,15 +53,6 @@ int main_with_large_stack_space_naive() {
   return 0;
 }
 
-bool isNodeVisited(std::vector<Node> visitedNodes, Node node) {
-  for(int i = 0; i < visitedNodes.size(); i++) {
-    if (visitedNodes[i].key == node.key) {
-      return true;
-    }
-  }
-  return false;
-}
-
 int main_with_large_stack_space() {
   std::ios_base::sync_with_stdio(0);
   int n;
