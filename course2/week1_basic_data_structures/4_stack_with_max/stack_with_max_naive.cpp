@@ -3,6 +3,7 @@
 #include <string>
 #include <cassert>
 #include <algorithm>
+#include <deque>
 
 using std::cin;
 using std::string;
@@ -10,7 +11,7 @@ using std::vector;
 using std::cout;
 using std::max_element;
 
-class StackWithMax {
+class StackWithMaxNaive {
     vector<int> stack;
 
   public:
@@ -27,6 +28,34 @@ class StackWithMax {
     int Max() const {
         assert(stack.size());
         return *max_element(stack.begin(), stack.end());
+    }
+};
+
+class StackWithMax {
+    vector<int> stack;
+    int maxIndex = 0;
+    vector<int> maxIndexTracker;
+  public:
+
+    void Push(int value) {
+        stack.push_back(value);
+        if(value >= stack[maxIndex]) {
+            maxIndex = stack.size() - 1;
+            maxIndexTracker.push_back(maxIndex);
+        }
+    }
+
+    void Pop() {
+        assert(stack.size());
+        if(maxIndex == stack.size() - 1) {
+            maxIndexTracker.pop_back();
+            maxIndex = maxIndexTracker[maxIndexTracker.size() - 1];
+        }  
+        stack.pop_back();
+    }
+
+    int Max() const {
+        return stack[maxIndex];
     }
 };
 
