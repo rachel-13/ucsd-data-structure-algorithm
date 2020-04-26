@@ -26,15 +26,37 @@ class Buffer {
 public:
     Buffer(int size):
         size_(size),
-        finish_time_()
+        q()
     {}
 
     Response Process(const Request &request) {
-        // write your code here
+        if(q.empty()) {
+            q.push(request.arrival_time + request.process_time);
+            Response processed = Response(false, request.arrival_time);
+            return processed;
+        } 
+
+        for(int i = 0; i < q.size(); i++) {
+            if(q.front() <= request.arrival_time) {
+                q.pop();
+            }
+        }
+        
+        int finishedTime = q.back();
+        if(request.arrival_time < finishedTime && q.size() == size_) {
+            Response dropped = Response(true, request.arrival_time);
+            return dropped;
+        } else {
+            int startTime = q.empty() ? request.arrival_time : finishedTime;
+            q.push(startTime + request.process_time);
+            Response processed = Response(false, startTime);
+            return processed;
+        }
     }
+
 private:
     int size_;
-    std::queue <int> finish_time_;
+    std::queue <int> q;
 };
 
 std::vector <Request> ReadRequests() {
