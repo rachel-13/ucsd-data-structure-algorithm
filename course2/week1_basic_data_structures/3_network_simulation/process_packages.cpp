@@ -1,5 +1,5 @@
 #include <iostream>
-#include <queue>
+#include <deque>
 #include <vector>
 
 struct Request {
@@ -30,17 +30,15 @@ public:
     {}
 
     Response Process(const Request &request) {
+        while(q.size() > 0 && q.front() <= request.arrival_time) {
+            q.pop_front();
+        }
+
         if(q.empty()) {
-            q.push(request.arrival_time + request.process_time);
+            q.push_back(request.arrival_time + request.process_time);
             Response processed = Response(false, request.arrival_time);
             return processed;
         } 
-
-        for(int i = 0; i < q.size(); i++) {
-            if(q.front() <= request.arrival_time) {
-                q.pop();
-            }
-        }
         
         int finishedTime = q.back();
         if(request.arrival_time < finishedTime && q.size() == size_) {
@@ -48,7 +46,7 @@ public:
             return dropped;
         } else {
             int startTime = q.empty() ? request.arrival_time : finishedTime;
-            q.push(startTime + request.process_time);
+            q.push_back(startTime + request.process_time);
             Response processed = Response(false, startTime);
             return processed;
         }
@@ -56,7 +54,7 @@ public:
 
 private:
     int size_;
-    std::queue <int> q;
+    std::deque <int> q;
 };
 
 std::vector <Request> ReadRequests() {
