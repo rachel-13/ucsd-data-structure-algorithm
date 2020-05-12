@@ -63,16 +63,16 @@ struct DisjointSets
 			{
 
 				sets[destination].parent = source;
-				sets[realDestination].size = sets[realDestination].size + sets[source].size;
+				sets[destination].size = sets[destination].size + sets[source].size;
 
 				sets[source].size = 0;
 
-				max_table_size = std::max(max_table_size, sets[realDestination].size);
+				max_table_size = std::max(max_table_size, sets[destination].size);
 			}
 			else
 			{
 				sets[source].parent = destination;
-				sets[realSource].size = sets[destination].size + sets[realSource].size;
+				sets[source].size = sets[destination].size + sets[source].size;
 
 				sets[destination].size = 0;
 
@@ -81,7 +81,7 @@ struct DisjointSets
 					sets[destination].rank = sets[destination].rank + 1;
 				}
 
-				max_table_size = std::max(max_table_size, sets[realSource].size);
+				max_table_size = std::max(max_table_size, sets[source].size);
 			}
 		}
 	}
