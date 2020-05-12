@@ -59,29 +59,31 @@ struct DisjointSets
 			// use union by rank heuristic
 			// update max_table_size
 
-			if (sets[source].rank > sets[destination].rank)
+			if (sets[realSource].rank > sets[realDestination].rank)
 			{
 
-				sets[destination].parent = source;
-				sets[destination].size = sets[destination].size + sets[source].size;
+				sets[realDestination].parent = realSource;
 
-				sets[source].size = 0;
+				sets[realSource].size = sets[realDestination].size + sets[realSource].size;
 
-				max_table_size = std::max(max_table_size, sets[destination].size);
+				sets[realDestination].size = 0;
+
+				max_table_size = std::max(max_table_size, sets[realSource].size);
 			}
 			else
 			{
-				sets[source].parent = destination;
-				sets[source].size = sets[destination].size + sets[source].size;
+				sets[realSource].parent = realDestination;
 
-				sets[destination].size = 0;
+				sets[realDestination].size = sets[realDestination].size + sets[realSource].size;
 
-				if (sets[source].rank == sets[destination].rank)
+				sets[realSource].size = 0;
+
+				if (sets[realDestination].rank == sets[realSource].rank)
 				{
-					sets[destination].rank = sets[destination].rank + 1;
+					sets[realDestination].rank = sets[realSource].rank + 1;
 				}
 
-				max_table_size = std::max(max_table_size, sets[source].size);
+				max_table_size = std::max(max_table_size, sets[realDestination].size);
 			}
 		}
 	}
@@ -90,7 +92,7 @@ struct DisjointSets
 int main()
 {
 
-	std::fstream cin("./tests/01");
+	// std::fstream cin("./tests/01");
 
 	int n, m;
 	cin >> n >> m;
