@@ -30,7 +30,6 @@ private:
 
   void WriteResponse() const
   {
-    // cout << "assigned workers size " << assigned_workers_.size() << "\n";
     for (int i = 0; i < jobs_.size(); ++i)
     {
       cout << assigned_workers_[i] << " " << start_times_[i] << "\n";

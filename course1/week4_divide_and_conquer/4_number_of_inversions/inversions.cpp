@@ -63,7 +63,6 @@ long long mergeArrays(vector<int> &a, vector<int> &b, size_t left,  size_t ave, 
 
 long long get_number_of_inversions(vector<int> &a, vector<int> &b, size_t left, size_t right) {
   long long number_of_inversions = 0;
-  // if (right <= left + 1) return number_of_inversions;
   
   if(right > left) {
     size_t ave = left + (right - left) / 2;
