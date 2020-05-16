@@ -91,7 +91,7 @@ long long hash_number(int x)
     long long result;
     long long L = pow(10, 7); // maximum length of data to hash, in this question it is 7
     long long p = L + 31;     // prime number bigger than 10 ^ L
-    long long m = 10000;      // cardinality/size of hash table
+    long long m = 10000000;      // cardinality/size of hash table
     long long a = 34;         // random number 1 < a < p - 1
     long long b = 31;          // random number 0 < b < p - 1
 
@@ -125,7 +125,7 @@ long long hash_string_hash(long long x)
     long long result;
     long long L = pow(10, 15); // maximum length of data to hash, in this question it is 15
     long long p = L + 19;      // prime number bigger than 10 ^ L
-    long long m = 10000;       // cardinality/size of hash table
+    long long m = 10000000;       // cardinality/size of hash table
     long long a = 34;          // random number 1 < a < p - 1
     long long b = 2;           // random number 0 < b < p - 1
 
@@ -138,7 +138,7 @@ vector<string> process_queries(const vector<Query> &queries)
 {
     vector<string> result;
 
-    int m = 10000; // cardinality/size of hash table
+    int m = 10000000; // cardinality/size of hash table
 
     vector<string> name(m);
     vector<int> number(m);
