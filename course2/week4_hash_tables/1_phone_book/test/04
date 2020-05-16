@@ -1,0 +1,35 @@
+25
+add 10001586 ikmulbtlvaegzoc
+add 10006037 kkuzjfujfhqgnnn
+del 10007516
+del 10006044
+del 10006400
+find 10005902
+find 10000197
+add 10004495 flzpqrrmmbqwrvy
+add 10007162 epvmiknemkxyewi
+add 10005239 xiwshzwlkrrleec
+add 10002944 jicbncnltrpamrg
+find 10003381
+find 10000475
+del 10001917
+find 10002162
+find 10008370
+del 10009857
+del 10002802
+add 10004512 kpajkbhqqlmcxcs
+add 10002457 acfivutpqpykwvt
+add 10005867 oyinzlrkktlfyob
+del 10005583
+find 10007965
+add 10006479 jiljsxfwcvttqwm
+del 10000106
+
+// expected output
+not found
+not found
+not found
+not found
+not found
+not found
+not found
