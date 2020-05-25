@@ -13,7 +13,7 @@ struct Answer
 	size_t i, j, len;
 };
 
-struct Hash_Result 
+struct Hash_Result
 {
 	bool found;
 	size_t i;
@@ -90,13 +90,22 @@ Hash_Result precompute_hash_for_s_t(const string &s, const string &t, size_t pat
 		longer_text_hash = precompute_hashes(s, patternLength, x, m1);
 	}
 
-	for(size_t i = 0; i < longer_text_hash.size(); i++)
-	{	
+	for (size_t i = 0; i < longer_text_hash.size(); i++)
+	{
 		vector<long long>::iterator it = find(shorter_text_hash.begin(), shorter_text_hash.end(), longer_text_hash[i]);
 		if (it != shorter_text_hash.end())
 		{
-			size_t j = std::distance(shorter_text_hash.begin(), it);
-			result = {true, j, i, patternLength};
+			if (s.length() < t.length())
+			{	// i and j needs to correspond to the string input that was given
+				// but since we swapped positions to calculate hash of shorter string, we need to re-swap it
+				size_t j = std::distance(shorter_text_hash.begin(), it);
+				result = {true, j, i, patternLength};
+			}
+			else
+			{
+				size_t j = std::distance(shorter_text_hash.begin(), it);
+				result = {true, i, j, patternLength};
+			}
 		}
 	}
 
@@ -113,12 +122,12 @@ Answer solve(const string &s, const string &t)
 	{
 		int l = right - left;
 		Hash_Result h_res = precompute_hash_for_s_t(s, t, l);
-		if (h_res.found == true && h_res.l > ans.len) 
+		if (h_res.found == true && h_res.l > ans.len)
 		{
 			ans = {h_res.i, h_res.j, h_res.l};
 		}
 		left = left + 1;
-	}	
+	}
 
 	return ans;
 }
@@ -127,7 +136,7 @@ int main()
 {
 	ios_base::sync_with_stdio(false), cin.tie(0);
 
-	// std::fstream cin("./tests/01");
+	// std::fstream cin("./tests/02");
 
 	string s, t;
 	while (cin >> s >> t)
