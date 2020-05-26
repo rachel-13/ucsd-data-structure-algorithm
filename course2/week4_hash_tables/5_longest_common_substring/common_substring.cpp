@@ -71,6 +71,24 @@ vector<long long> precompute_hashes(string text, int patternLength, int x, long 
 		long long sub2 = (y % p) * (text[j + patternLength] % p);
 		long long formula = (sub1 + text[j] - sub2);
 		hash[j] = ((formula % p) + p) % p;
+
+		/* example illustrated with text = "abcd" and patternLength = 2
+		
+		-- first iteration --
+		hash[j + 1] = 3199 which was pre-calculated above in `textToPolyHash` which is "cd"
+		text[j + patternLength] = "d"
+		text[j] = "b"
+		high level oversight -> formula = (hash of "cd") + (hash of "b") - (hash of "d") = (hash of "bc")
+		hash[j] = formula
+
+		-- second iteration --
+		hash[j + 1] = 3167 which was calculated in previous iteration
+		text[j + patternLength] = "c"
+		text[j]  = "a"
+		high level oversight -> formula: (hash of "bc") + (hash of "a") - (hash of "c") = (hash of "ab")
+		hash[j] = formula
+		
+		*/
 	}
 
 	return hash;
@@ -224,14 +242,14 @@ int main()
 {
 	ios_base::sync_with_stdio(false), cin.tie(0);
 
-	// std::fstream cin("./tests/02");
+	std::fstream cin("./tests/01");
 	// test_solution();
 
 	string s, t;
 	while (cin >> s >> t)
 	{
-		// if (s == "//")
-		// 	break;
+		if (s == "//")
+			break;
 		auto ans = solve(s, t);
 		cout << ans.i << " " << ans.j << " " << ans.len << "\n";
 	}
