@@ -108,37 +108,33 @@ void find_next_mismatch(int t_left, int t_right, int p_left, int p_right)
 	int t_mid = (t_left + t_right) / 2;
 	int p_mid = (p_left + p_right) / 2;
 
+	// do a precheck on whole substrings before breaking down further
+	long long substringHash_t_m1 = h1_t[t_right] % m1;
+	long long x_pow_l_t_hash_m1 = (x_pow_l_m1[length] * (h1_t[t_right - length] % m1)) % m1;
+	long long hash_t_m1 = (((substringHash_t_m1 - x_pow_l_t_hash_m1) % m1) + m1) % m1;
+
+	long long substringHash_p_m1 = h1_p[p_right] % m1;
+	long long x_pow_l_p_hash_m1 = (x_pow_l_m1[length] * (h1_p[p_right - length] % m1)) % m1;
+	long long hash_p_m1 = (((substringHash_p_m1 - x_pow_l_p_hash_m1) % m1) + m1) % m1;
+
+	if(hash_t_m1 == hash_p_m1)
+	{
+		return;
+	}
+
 	if (t_right <= t_left + 1)
 	{
-		if (t_right == t_left)
+		long long substringHash_t_m1 = h1_t[t_right] % m1;
+		long long x_pow_l_t_hash_m1 = (x_pow_l_m1[length] * (h1_t[t_right - length] % m1)) % m1;
+		long long hash_t_m1 = (((substringHash_t_m1 - x_pow_l_t_hash_m1) % m1) + m1) % m1;
+
+		long long substringHash_p_m1 = h1_p[p_right] % m1;
+		long long x_pow_l_p_hash_m1 = (x_pow_l_m1[length] * (h1_p[p_right - length] % m1)) % m1;
+		long long hash_p_m1 = (((substringHash_p_m1 - x_pow_l_p_hash_m1) % m1) + m1) % m1;
+
+		if (hash_t_m1 != hash_p_m1)
 		{
-			long long substringHash_t_m1 = h1_t[t_right] % m1;
-			long long x_pow_l_t_hash_m1 = (x_pow_l_m1[length] * (h1_t[t_right - 1] % m1)) % m1;
-			long long hash_t_m1 = (((substringHash_t_m1 - x_pow_l_t_hash_m1) % m1) + m1) % m1;
-
-			long long substringHash_p_m1 = h1_p[p_right] % m1;
-			long long x_pow_l_p_hash_m1 = (x_pow_l_m1[length] * (h1_p[p_right - 1] % m1)) % m1;
-			long long hash_p_m1 = (((substringHash_p_m1 - x_pow_l_p_hash_m1) % m1) + m1) % m1;
-
-			if (hash_t_m1 != hash_p_m1)
-			{
-				result.push_back(t_right - 1);
-			}
-		}
-		else
-		{
-			long long substringHash_t_m1 = h1_t[t_right] % m1;
-			long long x_pow_l_t_hash_m1 = (x_pow_l_m1[length] * (h1_t[t_right - length] % m1)) % m1;
-			long long hash_t_m1 = (((substringHash_t_m1 - x_pow_l_t_hash_m1) % m1) + m1) % m1;
-
-			long long substringHash_p_m1 = h1_p[p_right] % m1;
-			long long x_pow_l_p_hash_m1 = (x_pow_l_m1[length] * (h1_p[p_right - length] % m1)) % m1;
-			long long hash_p_m1 = (((substringHash_p_m1 - x_pow_l_p_hash_m1) % m1) + m1) % m1;
-
-			if (hash_t_m1 != hash_p_m1)
-			{
-				result.push_back(t_left);
-			}
+			result.push_back(t_left);
 		}
 	}
 	else
