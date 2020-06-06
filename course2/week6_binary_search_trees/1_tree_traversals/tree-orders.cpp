@@ -24,7 +24,7 @@ class TreeOrders
 public:
   void read()
   {
-    // std::fstream cin("./tests/21");
+    // std::fstream cin("./tests/02");
 
     cin >> n;
     key.resize(n);
@@ -40,35 +40,25 @@ public:
   {
     vector<int> result;
     stack<int> stack;
-    vector<int> visitedNodeIndices;
 
     int rootIndex = 0;
-    stack.push(rootIndex);
-    visitedNodeIndices.push_back(rootIndex);
 
-    while (result.size() < key.size())
+    while (rootIndex != -1 || !stack.empty())
     {
-      if (left[rootIndex] != -1 &&
-          find(visitedNodeIndices.begin(), visitedNodeIndices.end(), left[rootIndex]) == visitedNodeIndices.end())
+      if (rootIndex != -1)
       {
+        stack.push(rootIndex);
         int leftChildIndex = left[rootIndex];
-        stack.push(leftChildIndex);
         rootIndex = leftChildIndex;
-        continue;
       }
-
-      rootIndex = stack.top();
-      stack.pop();
-      result.push_back(key[rootIndex]);
-      visitedNodeIndices.push_back(rootIndex);
-
-      if (right[rootIndex] != -1 &&
-          find(visitedNodeIndices.begin(), visitedNodeIndices.end(), right[rootIndex]) == visitedNodeIndices.end())
+      else
       {
+        rootIndex = stack.top();
+        stack.pop();
+        result.push_back(key[rootIndex]);
+
         int rightChildIndex = right[rootIndex];
-        stack.push(rightChildIndex);
         rootIndex = rightChildIndex;
-        continue;
       }
     }
 
@@ -78,39 +68,27 @@ public:
   vector<int> pre_order()
   {
     vector<int> result;
-    vector<int> visitedNodeIndices;
     stack<int> stack;
 
     int rootIndex = 0;
-    result.push_back(key[rootIndex]);
-    visitedNodeIndices.push_back(rootIndex);
-    stack.push(rootIndex);
-    while (result.size() < key.size())
+
+    while (!stack.empty() || rootIndex != -1)
     {
-      if (left[rootIndex] != -1 &&
-          find(visitedNodeIndices.begin(), visitedNodeIndices.end(), left[rootIndex]) == visitedNodeIndices.end())
+      if (rootIndex != -1)
       {
+        result.push_back(key[rootIndex]);
+        stack.push(rootIndex);
         int leftChildIndex = left[rootIndex];
-        result.push_back(key[leftChildIndex]);
-        visitedNodeIndices.push_back(leftChildIndex);
-        stack.push(leftChildIndex);
         rootIndex = leftChildIndex;
-        continue;
       }
-
-      if (right[rootIndex] != -1 &&
-          find(visitedNodeIndices.begin(), visitedNodeIndices.end(), right[rootIndex]) == visitedNodeIndices.end())
+      else
       {
-        int rightChildIndex = right[rootIndex];
-        result.push_back(key[rightChildIndex]);
-        visitedNodeIndices.push_back(rightChildIndex);
-        stack.push(rightChildIndex);
-        rootIndex = rightChildIndex;
-        continue;
-      }
+        rootIndex = stack.top();
+        stack.pop();
 
-      rootIndex = stack.top();
-      stack.pop();
+        int rightChildIndex = right[rootIndex];
+        rootIndex = rightChildIndex;
+      }
     }
 
     return result;
@@ -120,36 +98,36 @@ public:
   {
     vector<int> result;
     stack<int> stack;
-    vector<int> visitedNodeIndices;
 
     int rootIndex = 0;
-    stack.push(rootIndex);
-    visitedNodeIndices.push_back(rootIndex);
+    int lastVisitedNode = -1;
 
-    while (result.size() < key.size())
+    while (!stack.empty() || rootIndex != -1)
     {
-      rootIndex = stack.top();
-
-      if (left[rootIndex] != -1 &&
-          find(visitedNodeIndices.begin(), visitedNodeIndices.end(), left[rootIndex]) == visitedNodeIndices.end())
+      if (rootIndex != -1)
       {
+        stack.push(rootIndex);
         int leftChildIndex = left[rootIndex];
-        stack.push(leftChildIndex);
-        continue;
+        rootIndex = leftChildIndex;
       }
-
-      if (right[rootIndex] != -1 &&
-          find(visitedNodeIndices.begin(), visitedNodeIndices.end(), right[rootIndex]) == visitedNodeIndices.end())
+      else
       {
+        rootIndex = stack.top();
+
         int rightChildIndex = right[rootIndex];
-        stack.push(rightChildIndex);
-        continue;
+
+        if (rightChildIndex == -1 || lastVisitedNode == rightChildIndex)
+        {
+          stack.pop();  
+          result.push_back(key[rootIndex]);
+          lastVisitedNode = rootIndex;
+          rootIndex = -1;
+        }
+        else
+        {
+          rootIndex = rightChildIndex;
+        }
       }
-
-      stack.pop();
-
-      result.push_back(key[rootIndex]);
-      visitedNodeIndices.push_back(rootIndex);
     }
 
     return result;
