@@ -8,9 +8,72 @@
 
 using std::cin;
 using std::cout;
+using std::min;
 using std::pair;
 using std::queue;
 using std::vector;
+
+class FlowGraph
+{
+public:
+  struct Edge
+  {
+    int from, to, capacity, flow;
+  };
+
+private:
+  /* List of all - forward and backward - edges */
+  vector<Edge> edges;
+
+  /* These adjacency lists store only indices of edges in the edges list */
+  vector<vector<size_t>> graph;
+
+public:
+  explicit FlowGraph(size_t n) : graph(n) {}
+
+  void add_edge(int from, int to, int capacity)
+  {
+    /* Note that we first append a forward edge and then a backward edge,
+         * so all forward edges are stored at even indices (starting from 0),
+         * whereas backward edges are stored at odd indices in the list edges */
+    Edge forward_edge = {from, to, capacity, 0};
+    Edge backward_edge = {to, from, 0, 0};
+    graph[from].push_back(edges.size());
+    edges.push_back(forward_edge);
+    graph[to].push_back(edges.size());
+    edges.push_back(backward_edge);
+  }
+
+  size_t size() const
+  {
+    return graph.size();
+  }
+
+  const vector<size_t> &get_ids(int from) const
+  {
+    return graph[from];
+  }
+
+  const Edge &get_edge(size_t id) const
+  {
+    return edges[id];
+  }
+
+  void add_flow(size_t id, int flow)
+  {
+    /* To get a backward edge for a true forward edge (i.e id is even), we should get id + 1
+         * due to the described above scheme. On the other hand, when we have to get a "backward"
+         * edge for a backward edge (i.e. get a forward edge for backward - id is odd), id - 1
+         * should be taken.
+         *
+         * It turns out that id ^ 1 works for both cases. Think this through! */
+    edges[id].flow += flow;
+    edges[id ^ 1].flow -= flow;
+
+    edges[id].capacity -= flow;
+    edges[id ^ 1].capacity += flow;
+  }
+};
 
 class MaxMatching
 {
@@ -25,7 +88,7 @@ public:
 private:
   vector<vector<bool>> ReadData()
   {
-    std::fstream cin("./tests/02");
+    // std::fstream cin("./tests/02");
 
     int num_left, num_right;
     cin >> num_left >> num_right;
@@ -49,38 +112,47 @@ private:
       if (matching[i] == -1)
         cout << "-1";
       else
-        cout << (matching[i]);
+        cout << (matching[i] + 1);
     }
     cout << "\n";
   }
 
-  int bfs(int source, int sink, vector<vector<int>> &graph, vector<vector<int>> &capacity, vector<int> &path)
+  int bfs(FlowGraph &graph, int from, int to, vector<int> &path)
   {
-    fill(path.begin(), path.end(), -1);
-    path[source] = -2;
-    queue<pair<int, int>> q;
-    q.push({source, INT_MAX});
+    int smallestCapacity = INT_MAX;
+    queue<int> q;
+    vector<bool> visited(graph.size());
+
+    visited[from] = true;
+    q.push(from);
 
     while (!q.empty())
     {
-      int cur = q.front().first;
-      int flow = q.front().second;
+      int currentNodeIndex = q.front();
       q.pop();
 
-      for (int next : graph[cur])
+      vector<size_t> edgesOfStartNode = graph.get_ids(currentNodeIndex);
+
+      for (int i = 0; i < edgesOfStartNode.size(); i++)
       {
-        if (path[next] == -1 && capacity[cur][next])
+        FlowGraph::Edge edge = graph.get_edge(edgesOfStartNode[i]);
+        if (edge.capacity > 0 && visited[edge.to] == false)
         {
-          path[next] = cur;
-          int new_flow = std::min(flow, capacity[cur][next]);
-          if (next == sink)
-            return new_flow;
-          q.push({next, new_flow});
+          path.push_back(edgesOfStartNode[i]);
+          visited[edge.to] = true;
+          smallestCapacity = min(smallestCapacity, edge.capacity);
+
+          if (edge.to == to)
+          {
+            return smallestCapacity;
+          }
+
+          q.push(edge.to);
         }
       }
     }
 
-    return 0;
+    return -1;
   }
 
   vector<int> FindMatching(const vector<vector<bool>> &adj_matrix)
@@ -88,29 +160,24 @@ private:
     vector<int> matching(adj_matrix.size(), -1);
 
     int matrixSize = adj_matrix[0].size() + adj_matrix.size() + 2; // number of col + number of row + source + sink
-    vector<vector<int>> capacity(matrixSize, vector<int>(matrixSize));
-    vector<vector<int>> graph(matrixSize);
+    FlowGraph graph(matrixSize);
 
     // build graph from source to nodes
     for (int j = 1; j <= adj_matrix.size(); j++)
     {
       int from = 0;
       int to = j;
-      capacity[from][to] = 1;
-      graph[from].push_back(to);
-      graph[to].push_back(from);
+      graph.add_edge(from, to, 1);
     }
 
     // build graph from sink to nodes
     // number of nodes on left side of the bipartite graph + source node is the starting index for node on right side of bipartite graph
     int startingColIndexToMap = adj_matrix.size() + 1;
-    for (int i = startingColIndexToMap; i < capacity.size() - 1; i++)
+    for (int i = startingColIndexToMap; i < matrixSize; i++)
     {
       int from = i;
-      int to = capacity[0].size() - 1;
-      capacity[from][to] = 1;
-      graph[from].push_back(to);
-      graph[to].push_back(from);
+      int to = matrixSize - 1;
+      graph.add_edge(from, to, 1);
     }
 
     // build graph for intermediate values based on input
@@ -124,41 +191,40 @@ private:
         int originalTo = j;
         if (adj_matrix[originalFrom][originalTo] == 1)
         {
-          capacity[from][to] = 1;
-          graph[from].push_back(to);
-          graph[to].push_back(from);
+          graph.add_edge(from, to, 1);
         }
       }
     }
 
-    int flow = 0;
-    vector<int> path(matrixSize);
-    int new_flow;
-    int source = 0;
-    int to = matrixSize - 1;
-
-    while (new_flow = bfs(0, to, graph, capacity, path))
+    while (true)
     {
-      flow += new_flow;
-      int cur = to;
-      while (cur != source)
+      vector<int> path;
+
+      int new_flow = bfs(graph, 0, matrixSize - 1, path);
+
+      if (new_flow == -1)
       {
-        int prev = path[cur];
-        capacity[prev][cur] -= new_flow;
-        capacity[cur][prev] += new_flow;
-        cur = prev;
+        break;
       }
-    }
 
-    for (int i = startingColIndexToMap; i < capacity.size() - 1; i++)
-    {
-      for (int j = 0; j < adj_matrix[0].size(); j++)
+      int currentNode = matrixSize - 1;
+
+      while (path.size() > 0)
       {
-        // j starts at 1 because 0 is source node but we are not interested in edges between source/sink and other nodes
-        // we are only interested in edged between 2 sides of the bipartite nodes
-        if (capacity[i][j + 1] == 1)
+        int previousPath = path.back();
+        path.pop_back();
+
+        FlowGraph::Edge edge = graph.get_edge(previousPath);
+
+        if (edge.to == currentNode)
         {
-          matching[i - startingColIndexToMap] = j + 1;
+          if(edge.from < startingColIndexToMap && edge.to >= startingColIndexToMap && edge.capacity == 1)
+          {
+            matching[edge.from - 1] = edge.to - startingColIndexToMap;
+          }
+
+          graph.add_flow(previousPath, new_flow);
+          currentNode = edge.from;
         }
       }
     }
