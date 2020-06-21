@@ -5,7 +5,7 @@
 #include <iomanip>
 
 const double EPS = 1e-6;
-const int PRECISION = 20;
+const int PRECISION = 10;
 
 typedef std::vector<double> Column;
 typedef std::vector<double> Row;
@@ -36,7 +36,7 @@ struct Position
 Equation ReadEquation()
 {
 
-    // std::fstream file("./tests/02");
+    // std::fstream file("./tests/05");
 
     // if (file.is_open())
     // {
@@ -61,13 +61,27 @@ Position SelectPivotElement(
     std::vector<bool> &used_rows,
     std::vector<bool> &used_columns)
 {
-    // This algorithm selects the first free element.
-    // You'll need to improve it to pass the problem.
     Position pivot_element(0, 0);
     while (used_rows[pivot_element.row])
         ++pivot_element.row;
     while (used_columns[pivot_element.column])
         ++pivot_element.column;
+
+    int nonZeroPivotRow = pivot_element.row;
+    if (a[pivot_element.row][pivot_element.column] == 0)
+    {
+        for (int i = 0; i < a.size(); i++)
+        {
+            if (a[i][pivot_element.column] != 0)
+            {
+                nonZeroPivotRow = a[i][pivot_element.column];
+                break;
+            }
+        }
+    }
+
+    pivot_element.row = nonZeroPivotRow;
+    
     return pivot_element;
 }
 
@@ -81,28 +95,30 @@ void SwapLines(Matrix &a, Column &b, std::vector<bool> &used_rows, Position &piv
 
 void ProcessPivotElement(Matrix &a, Column &b, const Position &pivot_element)
 {
-    int pivotCoeff = a[pivot_element.row][pivot_element.column];
+    // std::cout << "pivoting at row " << pivot_element.row << " column " << pivot_element.column << "\n";
+    double pivotCoeff = a[pivot_element.row][pivot_element.column];
 
-    if(std::abs(pivotCoeff) > 1)
+    if (std::abs(pivotCoeff) > 1)
     {
-        for(int i = 0; i < a[0].size(); i++)
+        for (int i = 0; i < a[0].size(); i++)
         {
-            a[pivot_element.row][i] = a[pivot_element.row][i] / pivotCoeff;
+            a[pivot_element.row][i] = (double)(a[pivot_element.row][i] / pivotCoeff);
         }
-        b[pivot_element.row] = b[pivot_element.row] / pivotCoeff;
+        b[pivot_element.row] = (double)(b[pivot_element.row] / pivotCoeff);
     }
 
     int pivotElementColumn = pivot_element.column;
     int pivotElementRow = pivot_element.row;
 
-    for(int i = 0; i < a.size(); i++)
+    for (int i = 0; i < a.size(); i++)
     {
-        if(i == pivotElementRow) { 
+        if (i == pivotElementRow)
+        {
             continue;
         }
-        
+
         double dividingCoeff = a[i][pivotElementColumn];
-        for(int j = 0; j < a[0].size(); j++)
+        for (int j = 0; j < a[0].size(); j++)
         {
             a[i][j] = a[i][j] - (a[pivotElementRow][j] * dividingCoeff);
         }
@@ -139,7 +155,7 @@ Column SolveEquation(Equation equation)
 void PrintColumn(const Column &column)
 {
     int size = column.size();
-     std::cout.precision(PRECISION);
+    std::cout.precision(PRECISION);
     std::cout << std::showpoint;
     for (int row = 0; row < size; ++row)
     {
