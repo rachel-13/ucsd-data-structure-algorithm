@@ -36,7 +36,7 @@ struct Position
 Equation ReadEquation()
 {
 
-    // std::fstream file("./tests/05");
+    // std::fstream file("./tests/08");
 
     // if (file.is_open())
     // {
@@ -58,6 +58,8 @@ Equation ReadEquation()
 
 Position SelectPivotElement(
     const Matrix &a,
+    Column &b,
+    int step,
     std::vector<bool> &used_rows,
     std::vector<bool> &used_columns)
 {
@@ -67,21 +69,18 @@ Position SelectPivotElement(
     while (used_columns[pivot_element.column])
         ++pivot_element.column;
 
-    int nonZeroPivotRow = pivot_element.row;
-    if (a[pivot_element.row][pivot_element.column] == 0)
+    int maxPivotRow = pivot_element.row;
+
+    for (int i = maxPivotRow + 1; i < a.size(); i++)
     {
-        for (int i = 0; i < a.size(); i++)
+        if (abs(a[i][pivot_element.column]) > abs(a[maxPivotRow][pivot_element.column]))
         {
-            if (a[i][pivot_element.column] != 0)
-            {
-                nonZeroPivotRow = a[i][pivot_element.column];
-                break;
-            }
+            maxPivotRow = i;
         }
     }
 
-    pivot_element.row = nonZeroPivotRow;
-    
+    pivot_element.row = maxPivotRow;
+
     return pivot_element;
 }
 
@@ -95,10 +94,9 @@ void SwapLines(Matrix &a, Column &b, std::vector<bool> &used_rows, Position &piv
 
 void ProcessPivotElement(Matrix &a, Column &b, const Position &pivot_element)
 {
-    // std::cout << "pivoting at row " << pivot_element.row << " column " << pivot_element.column << "\n";
     double pivotCoeff = a[pivot_element.row][pivot_element.column];
 
-    if (std::abs(pivotCoeff) > 1)
+    if (std::abs(pivotCoeff) > 0)
     {
         for (int i = 0; i < a[0].size(); i++)
         {
@@ -143,7 +141,7 @@ Column SolveEquation(Equation equation)
     std::vector<bool> used_rows(size, false);
     for (int step = 0; step < size; ++step)
     {
-        Position pivot_element = SelectPivotElement(a, used_rows, used_columns);
+        Position pivot_element = SelectPivotElement(a, b, step, used_rows, used_columns);
         SwapLines(a, b, used_rows, pivot_element);
         ProcessPivotElement(a, b, pivot_element);
         MarkPivotElementUsed(pivot_element, used_rows, used_columns);
