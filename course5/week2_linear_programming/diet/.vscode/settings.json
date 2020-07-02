@@ -62,6 +62,9 @@
         "vector": "cpp",
         "stack": "cpp",
         "deque": "cpp",
-        "filesystem": "cpp"
+        "filesystem": "cpp",
+        "fstream": "cpp",
+        "iomanip": "cpp",
+        "queue": "cpp"
     }
 }
