@@ -3,6 +3,7 @@
 #include <vector>
 #include <cstdio>
 #include <fstream>
+#include <limits.h>
 using namespace std;
 
 typedef vector<vector<double>> matrix;
@@ -90,21 +91,23 @@ void buildPhase1Tableu(int n, int m, matrix &tableu, matrix A, vector<double> b,
       break;
     }
 
-    for (int j = m; j < tableu.size() - 1; j++)
+    for (int j = i + m; j < tableu[0].size() - 1; j++)
     {
       if (b[i] < 0)
       {
-        tableu[i][i + j] = -1;
+        tableu[i][j] = -1;
         int artificalVarColIndex = lastColIndex - numOfAritificals;
         tableu[i][artificalVarColIndex] = 1;
         numOfAritificals--;
         artificialVarsIndex.push_back({i, artificalVarColIndex});
         basicVarIndex[i] = artificalVarColIndex;
+        break;
       }
       else
       {
-        tableu[i][i + j] = 1;
-        basicVarIndex[i] = i + j;
+        tableu[i][j] = 1;
+        basicVarIndex[i] = j;
+        break;
       }
     }
   }
@@ -123,7 +126,7 @@ void buildPhase1Tableu(int n, int m, matrix &tableu, matrix A, vector<double> b,
   }
 }
 
-int simplexPhase1(matrix &tableu, vector<double> &w, vector<int> &basicVarIndex)
+int simplexPhase1(int n, int m, matrix &tableu, vector<double> &w, vector<int> &basicVarIndex)
 {
   int result = 0;
 
@@ -158,13 +161,20 @@ int simplexPhase1(matrix &tableu, vector<double> &w, vector<int> &basicVarIndex)
       }
     }
 
-    if(pivotColumn == -1 || pivotRow == -1)
+    if (pivotColumn == -1 || pivotRow == -1)
     {
+      for (int i = 0; i < basicVarIndex.size(); i++)
+      {
+        if (basicVarIndex[i] >= (m + n))
+        {
+          result = -1;
+        }
+      }
       break;
     }
 
     // pivot phase 1
-    cout << "phase 1 pivoting on row " << pivotRow << " column " << pivotColumn;
+    // cout << "phase 1 pivoting on row " << pivotRow << " column " << pivotColumn;
     double tableuPivotPointCoeff = tableu[pivotRow][pivotColumn];
     if (tableuPivotPointCoeff != 1)
     {
@@ -190,15 +200,15 @@ int simplexPhase1(matrix &tableu, vector<double> &w, vector<int> &basicVarIndex)
         w[j] = w[j] - (artificialRowToClearCoeff * tableu[pivotRow][j]);
       }
     }
-    cout<<"\n=====================\n";
-    printTableu(tableu);
-    printVector(w);
+    // cout << "\n=====================\n";
+    // printTableu(tableu);
+    // printVector(w);
   }
 
   return result;
 }
 
-int simplexPhase2(matrix &tableu, vector<int> &basicVarIndex, int numberOfArtificials)
+int simplexPhase2(int n, int m, matrix &tableu, vector<int> &basicVarIndex, int numberOfArtificials)
 {
   int result = 0;
 
@@ -234,13 +244,26 @@ int simplexPhase2(matrix &tableu, vector<int> &basicVarIndex, int numberOfArtifi
       }
     }
 
-    if(pivotColumn == -1 || pivotRow == -1)
+    if (pivotColumn == -1 || pivotRow == -1)
     {
+      bool isInfinity = false;
+      for(int i = 0; i < (m + n); i++)
+      {
+        if(tableu[tableu.size() - 1][i] < 0)
+        {
+          isInfinity = true;
+        }
+      }
+
+      if(isInfinity)
+      {
+        result = 1;
+      }
       break;
     }
 
     // pivot phase 2
-    cout << "phase 2 pivoting on row " << pivotRow << " column " << pivotColumn;
+    // cout << "phase 2 pivoting on row " << pivotRow << " column " << pivotColumn;
     double tableuPivotPointCoeff = tableu[pivotRow][pivotColumn];
     if (tableuPivotPointCoeff != 1)
     {
@@ -264,8 +287,8 @@ int simplexPhase2(matrix &tableu, vector<int> &basicVarIndex, int numberOfArtifi
         tableu[i][j] = tableu[i][j] - (rowToClearCoeff * tableu[pivotRow][j]);
       }
     }
-    cout<<"\n=====================\n";
-    printTableu(tableu);
+    // cout << "\n=====================\n";
+    // printTableu(tableu);
   }
 
   return result;
@@ -281,8 +304,8 @@ pair<int, vector<double>> allocate_ads(
   int solution = 0;
   vector<double> result(m, 0);
 
-  int tableuPhase1Row = n + 1;
-  int tableuPhase1Col = b.size() * 2; // 1 column for every constraint
+  int tableuPhase1Row = n + 1;     //number of constraints + Objective row
+  int tableuPhase1Col = m + n + 1; // 1 column for every constraint, 1 column for every decision variable, 1 column for Answer
   int numberOfArtificials = 0;
 
   for (int i = 0; i < b.size(); i++)
@@ -298,18 +321,30 @@ pair<int, vector<double>> allocate_ads(
   vector<double> w(tableuPhase1[0].size(), 0); // aritifical objective function w
   vector<int> basicVarIndex(n);
   buildPhase1Tableu(n, m, tableuPhase1, A, b, c, numberOfArtificials, w, basicVarIndex);
-  printTableu(tableuPhase1);
-  printVector(w);
-  cout<<"\n=====================\n";
-  simplexPhase1(tableuPhase1, w, basicVarIndex);
-  
-  cout<<"\n=====================\n";
-  simplexPhase2(tableuPhase1, basicVarIndex, numberOfArtificials);
-
-  for(int i = 0; i < result.size(); i++)
+  // printTableu(tableuPhase1);
+  // printVector(w);
+  // cout << "\n===============================\n";
+  int phase1Res = simplexPhase1(n, m, tableuPhase1, w, basicVarIndex);
+  if (phase1Res == 0)
   {
-    int indexOfBasicVar = basicVarIndex[i];
-    result[indexOfBasicVar] = tableuPhase1[i][tableuPhase1[0].size() - 1];
+    // cout << "\n===============================\n";
+    int phase2Res = simplexPhase2(n, m, tableuPhase1, basicVarIndex, numberOfArtificials);
+    if (phase2Res == 0)
+    {
+      for (int i = 0; i < result.size(); i++)
+      {
+        int indexOfBasicVar = basicVarIndex[i];
+        result[indexOfBasicVar] = tableuPhase1[i][tableuPhase1[0].size() - 1];
+      }
+    }
+    else
+    {
+      solution = phase2Res;
+    }
+  }
+  else
+  {
+    solution = phase1Res;
   }
 
   return {solution, result};
@@ -317,12 +352,12 @@ pair<int, vector<double>> allocate_ads(
 
 int main()
 {
-  std::fstream file("./tests/01");
+  // std::fstream file("./tests/03");
 
-  if (file.is_open())
-  {
-    cin.rdbuf(file.rdbuf());
-  }
+  // if (file.is_open())
+  // {
+  //   cin.rdbuf(file.rdbuf());
+  // }
 
   int n, m;
   cin >> n >> m;
