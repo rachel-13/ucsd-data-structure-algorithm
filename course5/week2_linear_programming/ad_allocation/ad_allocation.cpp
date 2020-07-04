@@ -122,7 +122,7 @@ void buildPhase1Tableu(int n, int m, matrix &tableu, matrix A, vector<double> b,
       Position pos = artificialVarsIndex[i];
       if (pos.column != j)
       {
-        w[j] = w[j] + tableu[pos.row][j];
+        w[j] = w[j] - tableu[pos.row][j];
       }
     }
   }
@@ -134,12 +134,12 @@ int simplexPhase1(int n, int m, matrix &tableu, vector<double> &w, vector<int> &
 
   while (true)
   {
-    // choose pivot column, look for the most positive int in artificial row
+    // choose pivot column, look for the most negative int in artificial row
     int pivotColumn = -1;
-    int pivotColumnValue = -1;
+    int pivotColumnValue = INT_MAX;
     for (int i = 0; i < w.size() - 1 - 1; i++) // last column a.k.a Answer Column doesn't count
     {
-      if (w[i] > pivotColumnValue && w[i] > 0)
+      if (w[i] < pivotColumnValue && w[i] < 0)
       {
         pivotColumn = i;
         pivotColumnValue = w[i];
@@ -148,27 +148,34 @@ int simplexPhase1(int n, int m, matrix &tableu, vector<double> &w, vector<int> &
 
     // choose pivot row
     int pivotRow = -1;
-    int lastColIndex = tableu[0].size() - 1;
-    double ratio = INT_MAX;
-    for (int i = 0; i < tableu.size() - 1; i++) // last row doesn't count because it stores the original objective, hence another - 1 expression
+    if (pivotColumn == -1)
     {
-      if (tableu[i][pivotColumn] > 0)
+      // if there is no pivot column selected, do nothing and proceed
+    }
+    else
+    {
+      int lastColIndex = tableu[0].size() - 1;
+      double ratio = INT_MAX;
+      for (int i = 0; i < tableu.size() - 1; i++) // last row doesn't count because it stores the original objective, hence another - 1 expression
       {
-        double rowPivotRatio = tableu[i][lastColIndex] / tableu[i][pivotColumn];
-        if (rowPivotRatio < ratio)
+        if (tableu[i][pivotColumn] > 0)
         {
-          pivotRow = i;
-          ratio = rowPivotRatio;
+          double rowPivotRatio = tableu[i][lastColIndex] / tableu[i][pivotColumn];
+          if (rowPivotRatio < ratio)
+          {
+            pivotRow = i;
+            ratio = rowPivotRatio;
+          }
         }
       }
     }
 
     if (pivotColumn == -1 || pivotRow == -1)
     {
-      for (int i = 0; i < artificialVarsIndex.size(); i++)
+      for (int i = 0; i < basicVarIndex.size(); i++)
       {
-        Position index = artificialVarsIndex[i];
-        if (tableu[index.row][index.column] >= 1)
+        int index = basicVarIndex[i];
+        if (index >= m + n)
         {
           result = -1;
         }
@@ -238,7 +245,9 @@ int simplexPhase2(int n, int m, matrix &tableu, vector<int> &basicVarIndex, int 
     if (pivotColumn == -1)
     {
       // if there is no pivot column selected, do nothing and proceed
-    } else {
+    }
+    else
+    {
       int lastColIndex = tableu[0].size() - 1;
       double ratio = INT_MAX;
       for (int i = 0; i < tableu.size() - 1; i++) // last row doesn't count because it stores the original objective, hence another - 1 expression
