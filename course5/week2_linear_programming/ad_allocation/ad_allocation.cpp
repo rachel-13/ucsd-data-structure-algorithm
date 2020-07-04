@@ -3,6 +3,7 @@
 #include <vector>
 #include <cstdio>
 #include <fstream>
+#include <iomanip>
 #include <limits.h>
 using namespace std;
 
@@ -334,7 +335,10 @@ pair<int, vector<double>> allocate_ads(
       for (int i = 0; i < result.size(); i++)
       {
         int indexOfBasicVar = basicVarIndex[i];
-        result[indexOfBasicVar] = tableuPhase1[i][tableuPhase1[0].size() - 1];
+        if(indexOfBasicVar < result.size())
+        {
+          result[indexOfBasicVar] = tableuPhase1[i][tableuPhase1[0].size() - 1];
+        }
       }
     }
     else
@@ -352,12 +356,12 @@ pair<int, vector<double>> allocate_ads(
 
 int main()
 {
-  // std::fstream file("./tests/03");
+  std::fstream file("./tests/own_02");
 
-  // if (file.is_open())
-  // {
-  //   cin.rdbuf(file.rdbuf());
-  // }
+  if (file.is_open())
+  {
+    cin.rdbuf(file.rdbuf());
+  }
 
   int n, m;
   cin >> n >> m;
