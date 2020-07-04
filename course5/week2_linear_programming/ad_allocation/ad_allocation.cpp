@@ -5,6 +5,7 @@
 #include <fstream>
 #include <iomanip>
 #include <limits.h>
+#include <cmath>
 using namespace std;
 
 typedef vector<vector<double>> matrix;
@@ -36,6 +37,7 @@ void printVector(vector<double> v)
   cout << "\n";
 }
 
+vector<Position> artificialVarsIndex;
 void buildPhase1Tableu(int n, int m, matrix &tableu, matrix A, vector<double> b, vector<double> c, int numOfAritificals, vector<double> &w, vector<int> &basicVarIndex)
 {
   // build decision variables
@@ -83,7 +85,6 @@ void buildPhase1Tableu(int n, int m, matrix &tableu, matrix A, vector<double> b,
   }
 
   // build slack and aritificial variables
-  vector<Position> artificialVarsIndex;
   for (int i = 0; i < tableu.size(); i++)
   {
     // exclude last row which stores the original objective function
@@ -151,7 +152,7 @@ int simplexPhase1(int n, int m, matrix &tableu, vector<double> &w, vector<int> &
     double ratio = INT_MAX;
     for (int i = 0; i < tableu.size() - 1; i++) // last row doesn't count because it stores the original objective, hence another - 1 expression
     {
-      if (tableu[i][pivotColumn] >= 0)
+      if (tableu[i][pivotColumn] > 0)
       {
         double rowPivotRatio = tableu[i][lastColIndex] / tableu[i][pivotColumn];
         if (rowPivotRatio < ratio)
@@ -164,18 +165,20 @@ int simplexPhase1(int n, int m, matrix &tableu, vector<double> &w, vector<int> &
 
     if (pivotColumn == -1 || pivotRow == -1)
     {
-      for (int i = 0; i < basicVarIndex.size(); i++)
+      for (int i = 0; i < artificialVarsIndex.size(); i++)
       {
-        if (basicVarIndex[i] >= (m + n))
+        Position index = artificialVarsIndex[i];
+        if (tableu[index.row][index.column] >= 1)
         {
           result = -1;
         }
       }
+
       break;
     }
 
     // pivot phase 1
-    // cout << "phase 1 pivoting on row " << pivotRow << " column " << pivotColumn;
+    cout << "phase 1 pivoting on row " << pivotRow << " column " << pivotColumn;
     double tableuPivotPointCoeff = tableu[pivotRow][pivotColumn];
     if (tableuPivotPointCoeff != 1)
     {
@@ -201,9 +204,10 @@ int simplexPhase1(int n, int m, matrix &tableu, vector<double> &w, vector<int> &
         w[j] = w[j] - (artificialRowToClearCoeff * tableu[pivotRow][j]);
       }
     }
-    // cout << "\n=====================\n";
-    // printTableu(tableu);
-    // printVector(w);
+    cout << "\n===================================================\n";
+    printTableu(tableu);
+    cout << "\n=========== artifical vector row ====================\n";
+    printVector(w);
   }
 
   return result;
@@ -219,7 +223,7 @@ int simplexPhase2(int n, int m, matrix &tableu, vector<int> &basicVarIndex, int 
     int pivotColumn = -1;
     int pivotColumnValue = INT_MAX;
     int originalObjectiveRow = tableu.size() - 1;
-    for (int i = 0; i < tableu[0].size() - 1 - numberOfArtificials - 1; i++) // last column a.k.a Answer Column doesn't count
+    for (int i = 0; i <= tableu[0].size() - 1 - numberOfArtificials - 1; i++) // artificial column and last column a.k.a Answer Column doesn't count
     {
       if (tableu[originalObjectiveRow][i] < pivotColumnValue && tableu[originalObjectiveRow][i] < 0)
       {
@@ -230,17 +234,23 @@ int simplexPhase2(int n, int m, matrix &tableu, vector<int> &basicVarIndex, int 
 
     // choose pivot row
     int pivotRow = -1;
-    int lastColIndex = tableu[0].size() - 1;
-    double ratio = INT_MAX;
-    for (int i = 0; i < tableu.size() - 1; i++) // last row doesn't count because it stores the original objective, hence another - 1 expression
+
+    if (pivotColumn == -1)
     {
-      if (tableu[i][pivotColumn] >= 0)
+      // if there is no pivot column selected, do nothing and proceed
+    } else {
+      int lastColIndex = tableu[0].size() - 1;
+      double ratio = INT_MAX;
+      for (int i = 0; i < tableu.size() - 1; i++) // last row doesn't count because it stores the original objective, hence another - 1 expression
       {
-        double rowPivotRatio = tableu[i][lastColIndex] / tableu[i][pivotColumn];
-        if (rowPivotRatio < ratio)
+        if (tableu[i][pivotColumn] > 0)
         {
-          pivotRow = i;
-          ratio = rowPivotRatio;
+          double rowPivotRatio = tableu[i][lastColIndex] / tableu[i][pivotColumn];
+          if (rowPivotRatio < ratio)
+          {
+            pivotRow = i;
+            ratio = rowPivotRatio;
+          }
         }
       }
     }
@@ -248,15 +258,15 @@ int simplexPhase2(int n, int m, matrix &tableu, vector<int> &basicVarIndex, int 
     if (pivotColumn == -1 || pivotRow == -1)
     {
       bool isInfinity = false;
-      for(int i = 0; i < (m + n); i++)
+      for (int i = 0; i < (m + n); i++)
       {
-        if(tableu[tableu.size() - 1][i] < 0)
+        if (tableu[tableu.size() - 1][i] < 0)
         {
           isInfinity = true;
         }
       }
 
-      if(isInfinity)
+      if (isInfinity)
       {
         result = 1;
       }
@@ -264,7 +274,7 @@ int simplexPhase2(int n, int m, matrix &tableu, vector<int> &basicVarIndex, int 
     }
 
     // pivot phase 2
-    // cout << "phase 2 pivoting on row " << pivotRow << " column " << pivotColumn;
+    cout << "phase 2 pivoting on row " << pivotRow << " column " << pivotColumn;
     double tableuPivotPointCoeff = tableu[pivotRow][pivotColumn];
     if (tableuPivotPointCoeff != 1)
     {
@@ -288,8 +298,8 @@ int simplexPhase2(int n, int m, matrix &tableu, vector<int> &basicVarIndex, int 
         tableu[i][j] = tableu[i][j] - (rowToClearCoeff * tableu[pivotRow][j]);
       }
     }
-    // cout << "\n=====================\n";
-    // printTableu(tableu);
+    cout << "\n===================================================\n";
+    printTableu(tableu);
   }
 
   return result;
@@ -322,20 +332,23 @@ pair<int, vector<double>> allocate_ads(
   vector<double> w(tableuPhase1[0].size(), 0); // aritifical objective function w
   vector<int> basicVarIndex(n);
   buildPhase1Tableu(n, m, tableuPhase1, A, b, c, numberOfArtificials, w, basicVarIndex);
-  // printTableu(tableuPhase1);
-  // printVector(w);
-  // cout << "\n===============================\n";
+
+  printTableu(tableuPhase1);
+  cout << "\n=========== artifical vector row ====================\n";
+  printVector(w);
+  cout << "\n===================================================\n";
+
   int phase1Res = simplexPhase1(n, m, tableuPhase1, w, basicVarIndex);
   if (phase1Res == 0)
   {
-    // cout << "\n===============================\n";
+    cout << "\n===================================================\n";
     int phase2Res = simplexPhase2(n, m, tableuPhase1, basicVarIndex, numberOfArtificials);
     if (phase2Res == 0)
     {
-      for (int i = 0; i < result.size(); i++)
+      for (int i = 0; i < basicVarIndex.size(); i++)
       {
         int indexOfBasicVar = basicVarIndex[i];
-        if(indexOfBasicVar < result.size())
+        if (indexOfBasicVar < m)
         {
           result[indexOfBasicVar] = tableuPhase1[i][tableuPhase1[0].size() - 1];
         }
@@ -356,7 +369,7 @@ pair<int, vector<double>> allocate_ads(
 
 int main()
 {
-  std::fstream file("./tests/own_02");
+  std::fstream file("./tests/own_04");
 
   if (file.is_open())
   {
