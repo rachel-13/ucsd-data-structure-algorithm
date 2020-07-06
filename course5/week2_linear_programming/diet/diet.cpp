@@ -177,14 +177,15 @@ int simplexPhase1(int n, int m, matrix &tableu, vector<double> &w, vector<int> &
         int varColIndex = basicVarColIndex[constraintRowIndex];
         if (varColIndex >= m + n)
         {
-          if (tableu[constraintRowIndex][lastColIndex] > 0.0000000001)
-          {
-            result = -1;
-          }
-          else
-          {
-             // artificial variable is 0 even though it is in basic solution 
-          }
+          result = -1;
+          // if (tableu[constraintRowIndex][lastColIndex] > 0.0000000001)
+          // {
+          //   result = -1;
+          // }
+          // else
+          // {
+          //   // artificial variable is 0 even though it is in basic solution
+          // }
         }
       }
 
@@ -215,11 +216,15 @@ int simplexPhase1(int n, int m, matrix &tableu, vector<double> &w, vector<int> &
       for (int j = 0; j < tableu[0].size(); j++)
       {
         tableu[i][j] = tableu[i][j] - (rowToClearCoeff * tableu[pivotRow][j]);
-        if(fabs(tableu[i][j]) < 0.00000000001)
+        if (fabs(tableu[i][j]) < 0.00000000001)
         {
           tableu[i][j] = 0;
         }
         w[j] = w[j] - (artificialRowToClearCoeff * tableu[pivotRow][j]);
+        if (fabs(w[j]) < 0.00000000001)
+        {
+          w[j] = 0;
+        }
       }
     }
     // cout << "\n===================================================\n";
@@ -316,7 +321,7 @@ int simplexPhase2(int n, int m, matrix &tableu, vector<int> &basicVarIndex, int 
       for (int j = 0; j < tableu[0].size(); j++)
       {
         tableu[i][j] = tableu[i][j] - (rowToClearCoeff * tableu[pivotRow][j]);
-        if(fabs(tableu[i][j]) < 0.00000000001)
+        if (fabs(tableu[i][j]) < 0.00000000001)
         {
           tableu[i][j] = 0;
         }
@@ -385,7 +390,34 @@ pair<int, vector<double>> solve_diet_problem(
   }
   else
   {
-    solution = phase1Res;
+    int lastColIndex = tableuPhase1[0].size() - 1;
+    for (int constraintRowIndex = 0; constraintRowIndex < basicVarIndex.size(); constraintRowIndex++)
+    {
+      int varColIndex = basicVarIndex[constraintRowIndex];
+      if (varColIndex >= m + n)
+      {
+        if (tableuPhase1[constraintRowIndex][lastColIndex] > 0.0000000001)
+        {
+          solution = -1;
+        }
+        else
+        {
+          // artificial variable is 0 even though it is in basic solution
+        }
+      }
+    }
+
+    if (solution == 0)
+    {
+      for (int i = 0; i < basicVarIndex.size(); i++)
+      {
+        int indexOfBasicVar = basicVarIndex[i];
+        if (indexOfBasicVar < m)
+        {
+          result[indexOfBasicVar] = tableuPhase1[i][tableuPhase1[0].size() - 1];
+        }
+      }
+    }
   }
 
   return {solution, result};
@@ -393,12 +425,12 @@ pair<int, vector<double>> solve_diet_problem(
 
 int main()
 {
-  std::fstream file("./tests/01");
+  // std::fstream file("./tests/120");
 
-  if (file.is_open())
-  {
-    cin.rdbuf(file.rdbuf());
-  }
+  // if (file.is_open())
+  // {
+  //   cin.rdbuf(file.rdbuf());
+  // }
 
   int n, m;
   cin >> n >> m;
