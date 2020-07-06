@@ -134,7 +134,7 @@ int simplexPhase1(int n, int m, matrix &tableu, vector<double> &w, vector<int> &
 
   while (true)
   {
-    // choose pivot column, look for the most negative int in artificial row
+    // choose pivot column, look for the most positive int in artificial row
     int pivotColumn = -1;
     int pivotColumnValue = -1;
     for (int i = 0; i < w.size() - 1; i++) // last column a.k.a Answer Column doesn't count
