@@ -136,6 +136,25 @@ struct ConvertHampathToSat
     void nonadjacentNodesCannotHaveAdjacentPath(matrix adjacency, matrix variableMap)
     {
         // nonadjacent nodes cannot be adjacent in path
+        /*
+            this means that for the following graph and matrix
+
+            1 -- 2 -- 3 -- 5 -- 4
+
+                1   2   3   4   5   <-- position
+            =====================
+            1|  1   2   3   4   5   <-- node 1
+            2|  6   7   8   9   10
+            3|  11  12  13  14  15
+            4|  16  17  18  19  20
+            5|  21  22  23  24  25
+
+            we cannot jump from node 1 to node 3 in the path because they are no connected by an edge. 
+            in other words, if node 1 is at position 1 of the path, node 3 will never be in position 2.
+            if node 1 is at position 2 of the path, node 3 can never be in position 1 or 3 in the path.
+            therefore we will need to make clause like (-1 V -7)(-2 V -13) etc
+
+        */
         for (int i = 0; i < numVertices; i++)
         {
             for (int j = 0; j < numVertices; j++)
