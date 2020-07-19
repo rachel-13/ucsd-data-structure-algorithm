@@ -1,79 +1,223 @@
-#include <bits/stdc++.h>
+#include <iostream>
+#include <algorithm>
+#include <vector>
+#include <cstdio>
+#include <fstream>
+#include <stack>
+#include <unordered_map>
+#include <set>
+#include <sys/resource.h>
 using namespace std;
 
-struct Clause {
+struct Clause
+{
     int firstVar;
     int secondVar;
 };
 
-struct TwoSatisfiability {
+struct Edge
+{
+public:
+    int from, to;
+};
+
+typedef vector<vector<int>> matrix;
+
+struct TwoSatisfiability
+{
+public:
     int numVars;
     vector<Clause> clauses;
+    vector<Edge> edges;
+    int adjMatSize = 2 * numVars;
+    matrix adjList;
+    unordered_map<int, int> mapIndexToLiteral;
+    matrix scc;
 
-    TwoSatisfiability(int n, int m) :
-        numVars(n),
-        clauses(m)
-    {  }
+    TwoSatisfiability(int n, int m) : numVars(n),
+                                      clauses(m)
+    {
+    }
 
-    bool isSatisfiable(vector<int>& result) {
-        // This solution tries all possible 2^n variable assignments.
-        // It is too slow to pass the problem.
-        // Implement a more efficient algorithm here.
-        for (int mask = 0; mask < (1 << numVars); ++mask) {
-            for (int i = 0; i < numVars; ++i) {
-                result[i] = (mask >> i) & 1;
+    void buildAdjList()
+    {
+        adjList = matrix(adjMatSize, vector<int>(adjMatSize, 0));
+
+        for (int i = 0; i < clauses.size(); i++)
+        {
+            Edge edge1 = Edge();
+            edge1.from = -(clauses[i].firstVar);
+            edge1.to = clauses[i].secondVar;
+
+            Edge edge2 = Edge();
+            edge2.from = -(clauses[i].secondVar);
+            edge2.to = clauses[i].firstVar;
+
+            edges.push_back(edge1);
+            edges.push_back(edge2);
+
+            int adjListFrom1 = (edge1.from - 1) * 2;
+            if (edge1.from < 0)
+            {
+                adjListFrom1 = (abs(edge1.from) * 2) - 1;
             }
 
-            bool formulaIsSatisfied = true;
-
-            for (const Clause& clause: clauses) {
-                bool clauseIsSatisfied = false;
-                if (result[abs(clause.firstVar) - 1] == (clause.firstVar < 0)) {
-                    clauseIsSatisfied = true;
-                }
-                if (result[abs(clause.secondVar) - 1] == (clause.secondVar < 0)) {
-                    clauseIsSatisfied = true;
-                }
-                if (!clauseIsSatisfied) {
-                    formulaIsSatisfied = false;
-                    break;
-                }
+            int adjListTo1 = (edge1.to - 1) * 2;
+            if (edge1.to < 0)
+            {
+                adjListTo1 = (abs(edge1.to) * 2) - 1;
             }
 
-            if (formulaIsSatisfied) {
-                return true;
+            int adjListFrom2 = (edge2.from - 1) * 2;
+            if (edge2.from < 0)
+            {
+                adjListFrom2 = (abs(edge2.from) * 2) - 1;
+            }
+
+            int adjListTo2 = (edge2.to - 1) * 2;
+            if (edge2.to < 0)
+            {
+                adjListTo2 = (abs(edge2.to) * 2) - 1;
+            }
+
+            mapIndexToLiteral[adjListFrom1] = edge1.from;
+            mapIndexToLiteral[adjListTo1] = edge1.to;
+            mapIndexToLiteral[adjListFrom2] = edge2.from;
+            mapIndexToLiteral[adjListTo2] = edge2.to;
+
+            adjList[adjListFrom1][adjListTo1] = 1;
+            adjList[adjListFrom2][adjListTo2] = 1;
+        }
+    }
+
+    void findComponentSets(int u, int disc[], int low[], stack<int> &stk, bool stkItem[])
+    {
+        static int time = 0;
+        disc[u] = low[u] = ++time; //inilially discovery time and low value is 1
+        stk.push(u);
+        stkItem[u] = true; //flag as u in the stack
+
+        for (int v = 0; v < adjMatSize; v++)
+        {
+            if (adjList[u][v])
+            {
+                if (disc[v] == -1)
+                { //when v is not visited
+                    findComponentSets(v, disc, low, stk, stkItem);
+                    low[u] = min(low[u], low[v]);
+                }
+                else if (stkItem[v]) //when v is in the stack, update low for u
+                    low[u] = min(low[u], disc[v]);
             }
         }
-        return false;
+
+        int poppedItem = 0;
+        if (low[u] == disc[u])
+        {
+            vector<int> v;
+            while (stk.top() != u)
+            {
+
+                poppedItem = stk.top();
+                int literal = mapIndexToLiteral[poppedItem];
+                // cout << literal << endl;
+                v.push_back(literal);
+
+                stkItem[poppedItem] = false; //mark as item is popped
+                stk.pop();
+            }
+
+            poppedItem = stk.top();
+            int literal = mapIndexToLiteral[poppedItem];
+            // cout << literal << endl;
+            v.push_back(literal);
+
+            stkItem[poppedItem] = false;
+            stk.pop();
+
+            scc.push_back(v);
+        }
+    }
+
+    void searchAllScc()
+    {
+        int disc[adjMatSize], low[adjMatSize];
+        bool stkItem[adjMatSize];
+        stack<int> stk;
+
+        for (int i = 0; i < adjMatSize; i++)
+        { //initialize all elements
+            disc[i] = low[i] = -1;
+            stkItem[i] = false;
+        }
+
+        for (int i = 0; i < adjMatSize; i++) //initialize all elements
+            if (disc[i] == -1)
+            {
+                findComponentSets(i, disc, low, stk, stkItem);
+            }
+        }
+
+    bool isSatisfiable(vector<int> &result)
+    {
+        buildAdjList();
+        searchAllScc();
+
+        for (int i = 0; i < scc.size(); i++)
+        {
+            vector<int> component = scc[i];
+
+            for (int j = 0; j < numVars; j++)
+            {
+                int variable = j + 1;
+                int variableNegation = variable * -1;
+                auto it1 = find(component.begin(), component.end(), variable);
+                auto it2 = find(component.begin(), component.end(), variableNegation);
+                if (it1 != component.end() && it2 != component.end())
+                {
+                    return false;
+                }
+            }
+
+            for (int j = 0; j < component.size(); j++)
+            {
+                int literal = component[j];
+                if (result[abs(literal) - 1] == 9999999)
+                {
+                    result[abs(literal) - 1] = literal;
+                }
+            }
+        }
+
+        return true;
     }
 };
 
-int main() {
+int main()
+{
     ios::sync_with_stdio(false);
+
+    fstream cin("./tests/01");
 
     int n, m;
     cin >> n >> m;
     TwoSatisfiability twoSat(n, m);
-    for (int i = 0; i < m; ++i) {
+    for (int i = 0; i < m; ++i)
+    {
         cin >> twoSat.clauses[i].firstVar >> twoSat.clauses[i].secondVar;
     }
 
-    vector<int> result(n);
-    if (twoSat.isSatisfiable(result)) {
+    vector<int> result(n, 9999999);
+    if (twoSat.isSatisfiable(result))
+    {
         cout << "SATISFIABLE" << endl;
-        for (int i = 1; i <= n; ++i) {
-            if (result[i-1]) {
-                cout << -i;
-            } else {
-                cout << i;
-            }
-            if (i < n) {
-                cout << " ";
-            } else {
-                cout << endl;
-            }
+        for (int i = 0; i < n; ++i)
+        {
+            cout << result[i] << " ";
         }
-    } else {
+    }
+    else
+    {
         cout << "UNSATISFIABLE" << endl;
     }
 
