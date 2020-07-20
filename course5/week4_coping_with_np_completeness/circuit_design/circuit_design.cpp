@@ -21,6 +21,15 @@ public:
     int from, to;
 };
 
+struct Vertex
+{
+    int literal;
+    int index;
+    int lowLink;
+    bool onStack;
+    vector<Edge> edges;
+};
+
 typedef vector<vector<int>> matrix;
 
 struct TwoSatisfiability
@@ -29,9 +38,9 @@ public:
     int numVars;
     vector<Clause> clauses;
     vector<Edge> edges;
-    int adjMatSize = 2 * numVars;
+    int adjListSize = 2 * numVars;
     matrix adjList;
-    unordered_map<int, int> mapIndexToLiteral;
+    vector<int> mapIndexToLiteral;
     matrix scc;
 
     TwoSatisfiability(int n, int m) : numVars(n),
@@ -41,7 +50,8 @@ public:
 
     void buildAdjList()
     {
-        adjList = matrix(adjMatSize, vector<int>(adjMatSize, 0));
+        adjList = matrix(adjListSize);
+        mapIndexToLiteral = vector<int>(adjListSize);
 
         for (int i = 0; i < clauses.size(); i++)
         {
@@ -85,8 +95,8 @@ public:
             mapIndexToLiteral[adjListFrom2] = edge2.from;
             mapIndexToLiteral[adjListTo2] = edge2.to;
 
-            adjList[adjListFrom1][adjListTo1] = 1;
-            adjList[adjListFrom2][adjListTo2] = 1;
+            adjList[adjListFrom1].push_back(adjListTo1);
+            adjList[adjListFrom2].push_back(adjListTo2);
         }
     }
 
@@ -97,18 +107,16 @@ public:
         stk.push(u);
         stkItem[u] = true; //flag as u in the stack
 
-        for (int v = 0; v < adjMatSize; v++)
+        for (int v = 0; v < adjList[u].size(); v++)
         {
-            if (adjList[u][v])
-            {
-                if (disc[v] == -1)
-                { //when v is not visited
-                    findComponentSets(v, disc, low, stk, stkItem);
-                    low[u] = min(low[u], low[v]);
-                }
-                else if (stkItem[v]) //when v is in the stack, update low for u
-                    low[u] = min(low[u], disc[v]);
+            int ind = adjList[u][v];
+            if (disc[ind] == -1)
+            { //when v is not visited
+                findComponentSets(ind, disc, low, stk, stkItem);
+                low[u] = min(low[u], low[ind]);
             }
+            else if (stkItem[v]) //when v is in the stack, update low for u
+                low[u] = min(low[u], disc[ind]);
         }
 
         int poppedItem = 0;
@@ -120,7 +128,7 @@ public:
 
                 poppedItem = stk.top();
                 int literal = mapIndexToLiteral[poppedItem];
-                // cout << literal << endl;
+                // cout << literal << " ";
                 v.push_back(literal);
 
                 stkItem[poppedItem] = false; //mark as item is popped
@@ -141,22 +149,22 @@ public:
 
     void searchAllScc()
     {
-        int disc[adjMatSize], low[adjMatSize];
-        bool stkItem[adjMatSize];
+        int disc[adjListSize], low[adjListSize];
+        bool stkItem[adjListSize];
         stack<int> stk;
 
-        for (int i = 0; i < adjMatSize; i++)
+        for (int i = 0; i < adjListSize; i++)
         { //initialize all elements
             disc[i] = low[i] = -1;
             stkItem[i] = false;
         }
 
-        for (int i = 0; i < adjMatSize; i++) //initialize all elements
+        for (int i = 0; i < adjListSize; i++) //initialize all elements
             if (disc[i] == -1)
             {
                 findComponentSets(i, disc, low, stk, stkItem);
             }
-        }
+    }
 
     bool isSatisfiable(vector<int> &result)
     {
@@ -197,7 +205,7 @@ int main()
 {
     ios::sync_with_stdio(false);
 
-    fstream cin("./tests/01");
+    // fstream cin("./tests/02");
 
     int n, m;
     cin >> n >> m;
