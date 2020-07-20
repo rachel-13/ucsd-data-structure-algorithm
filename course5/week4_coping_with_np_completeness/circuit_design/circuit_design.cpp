@@ -115,7 +115,7 @@ public:
                 findComponentSets(ind, disc, low, stk, stkItem);
                 low[u] = min(low[u], low[ind]);
             }
-            else if (stkItem[v]) //when v is in the stack, update low for u
+            else if (stkItem[ind]) //when v is in the stack, update low for u
                 low[u] = min(low[u], disc[ind]);
         }
 
@@ -205,7 +205,7 @@ int main()
 {
     ios::sync_with_stdio(false);
 
-    // fstream cin("./tests/02");
+    // fstream cin("./tests/03");
 
     int n, m;
     cin >> n >> m;
