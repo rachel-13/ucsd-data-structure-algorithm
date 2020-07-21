@@ -37,11 +37,12 @@ struct TwoSatisfiability
 public:
     int numVars;
     vector<Clause> clauses;
-    vector<Edge> edges;
+    vector<int> literalMappedToSCC;
     int adjListSize = 2 * numVars;
     matrix adjList;
     vector<int> mapIndexToLiteral;
     matrix scc;
+    int sccCount = 0;
 
     TwoSatisfiability(int n, int m) : numVars(n),
                                       clauses(m)
@@ -52,6 +53,7 @@ public:
     {
         adjList = matrix(adjListSize);
         mapIndexToLiteral = vector<int>(adjListSize);
+        literalMappedToSCC = vector<int>(adjListSize, -1);
 
         for (int i = 0; i < clauses.size(); i++)
         {
@@ -63,31 +65,28 @@ public:
             edge2.from = -(clauses[i].secondVar);
             edge2.to = clauses[i].firstVar;
 
-            edges.push_back(edge1);
-            edges.push_back(edge2);
-
-            int adjListFrom1 = (edge1.from - 1) * 2;
+            int adjListFrom1 = edge1.from - 1;
             if (edge1.from < 0)
             {
-                adjListFrom1 = (abs(edge1.from) * 2) - 1;
+                adjListFrom1 = (abs(edge1.from) - 1) + numVars;
             }
 
-            int adjListTo1 = (edge1.to - 1) * 2;
+            int adjListTo1 = edge1.to - 1;
             if (edge1.to < 0)
             {
-                adjListTo1 = (abs(edge1.to) * 2) - 1;
+                adjListTo1 = (abs(edge1.to) - 1) + numVars;
             }
 
-            int adjListFrom2 = (edge2.from - 1) * 2;
+            int adjListFrom2 = edge2.from - 1;
             if (edge2.from < 0)
             {
-                adjListFrom2 = (abs(edge2.from) * 2) - 1;
+                adjListFrom2 = (abs(edge2.from) - 1) + numVars;
             }
 
-            int adjListTo2 = (edge2.to - 1) * 2;
+            int adjListTo2 = edge2.to - 1;
             if (edge2.to < 0)
             {
-                adjListTo2 = (abs(edge2.to) * 2) - 1;
+                adjListTo2 = (abs(edge2.to) - 1) + numVars;
             }
 
             mapIndexToLiteral[adjListFrom1] = edge1.from;
@@ -100,7 +99,7 @@ public:
         }
     }
 
-    void findComponentSets(int u, int disc[], int low[], stack<int> &stk, bool stkItem[])
+    void findComponentSets(int u, vector<int> &disc, vector<int> &low, stack<int> &stk, vector<bool> &stkItem)
     {
         static int time = 0;
         disc[u] = low[u] = ++time; //inilially discovery time and low value is 1
@@ -119,9 +118,11 @@ public:
                 low[u] = min(low[u], disc[ind]);
         }
 
+        
         int poppedItem = 0;
         if (low[u] == disc[u])
         {
+            ++sccCount;
             vector<int> v;
             while (stk.top() != u)
             {
@@ -130,6 +131,7 @@ public:
                 int literal = mapIndexToLiteral[poppedItem];
                 // cout << literal << " ";
                 v.push_back(literal);
+                literalMappedToSCC[poppedItem] = sccCount;
 
                 stkItem[poppedItem] = false; //mark as item is popped
                 stk.pop();
@@ -139,6 +141,7 @@ public:
             int literal = mapIndexToLiteral[poppedItem];
             // cout << literal << endl;
             v.push_back(literal);
+            literalMappedToSCC[poppedItem] = sccCount;
 
             stkItem[poppedItem] = false;
             stk.pop();
@@ -149,21 +152,18 @@ public:
 
     void searchAllScc()
     {
-        int disc[adjListSize], low[adjListSize];
-        bool stkItem[adjListSize];
+        vector<int> disc(adjListSize, -1);
+        vector<int> low(adjListSize, -1);
+        vector<bool> stkItem(adjListSize, false);
         stack<int> stk;
 
-        for (int i = 0; i < adjListSize; i++)
-        { //initialize all elements
-            disc[i] = low[i] = -1;
-            stkItem[i] = false;
-        }
-
         for (int i = 0; i < adjListSize; i++) //initialize all elements
+        {
             if (disc[i] == -1)
             {
                 findComponentSets(i, disc, low, stk, stkItem);
             }
+        }
     }
 
     bool isSatisfiable(vector<int> &result)
@@ -171,22 +171,17 @@ public:
         buildAdjList();
         searchAllScc();
 
+        for(int i = 0; i < numVars; i++)
+        {
+            if(literalMappedToSCC[i] == literalMappedToSCC[i+numVars])
+            {
+                return false;
+            }
+        }
+
         for (int i = 0; i < scc.size(); i++)
         {
             vector<int> component = scc[i];
-
-            for (int j = 0; j < numVars; j++)
-            {
-                int variable = j + 1;
-                int variableNegation = variable * -1;
-                auto it1 = find(component.begin(), component.end(), variable);
-                auto it2 = find(component.begin(), component.end(), variableNegation);
-                if (it1 != component.end() && it2 != component.end())
-                {
-                    return false;
-                }
-            }
-
             for (int j = 0; j < component.size(); j++)
             {
                 int literal = component[j];
@@ -203,6 +198,25 @@ public:
 
 int main()
 {
+    // This code is here to increase the stack size to avoid stack overflow
+    // in depth-first search.
+    const rlim_t kStackSize = 64L * 1024L * 1024L;  // min stack size = 64 Mb
+    struct rlimit rl;
+    int sresult;
+    sresult = getrlimit(RLIMIT_STACK, &rl);
+    if (sresult == 0)
+    {
+        if (rl.rlim_cur < kStackSize)
+        {
+            rl.rlim_cur = kStackSize;
+            sresult = setrlimit(RLIMIT_STACK, &rl);
+            if (sresult != 0)
+            {
+                fprintf(stderr, "setrlimit returned result = %d\n", sresult);
+            }
+        }
+    }
+
     ios::sync_with_stdio(false);
 
     // fstream cin("./tests/03");
