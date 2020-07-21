@@ -1,12 +1,10 @@
+#include <sys/resource.h>
 #include <iostream>
 #include <algorithm>
 #include <vector>
 #include <cstdio>
 #include <fstream>
 #include <stack>
-#include <unordered_map>
-#include <set>
-#include <sys/resource.h>
 using namespace std;
 
 struct Clause
@@ -41,8 +39,9 @@ public:
     int adjListSize = 2 * numVars;
     matrix adjList;
     vector<int> mapIndexToLiteral;
-    matrix scc;
-    int sccCount = 0;
+    // matrix scc;
+    int sccID = 0;
+    std::vector<bool> sol;
 
     TwoSatisfiability(int n, int m) : numVars(n),
                                       clauses(m)
@@ -54,6 +53,7 @@ public:
         adjList = matrix(adjListSize);
         mapIndexToLiteral = vector<int>(adjListSize);
         literalMappedToSCC = vector<int>(adjListSize, -1);
+        sol = vector<bool>(numVars);
 
         for (int i = 0; i < clauses.size(); i++)
         {
@@ -99,54 +99,83 @@ public:
         }
     }
 
-    void findComponentSets(int u, vector<int> &disc, vector<int> &low, stack<int> &stk, vector<bool> &stkItem)
+    void findComponentSets(int u, matrix &adjList, vector<int> &disc, vector<int> &low, stack<int> &stk, vector<bool> &stkItem)
     {
         static int time = 0;
         disc[u] = low[u] = ++time; //inilially discovery time and low value is 1
         stk.push(u);
         stkItem[u] = true; //flag as u in the stack
 
-        for (int v = 0; v < adjList[u].size(); v++)
+        for (int i = 0; i < adjList[u].size(); i++)
         {
-            int ind = adjList[u][v];
-            if (disc[ind] == -1)
+            auto& v = adjList[u][i];
+            if (disc[v] == -1)
             { //when v is not visited
-                findComponentSets(ind, disc, low, stk, stkItem);
-                low[u] = min(low[u], low[ind]);
+                findComponentSets(v, adjList, disc, low, stk, stkItem);
+                low[u] = min(low[u], low[v]);
             }
-            else if (stkItem[ind]) //when v is in the stack, update low for u
-                low[u] = min(low[u], disc[ind]);
+            else if (stkItem[v]) //when v is in the stack, update low for u
+                low[u] = min(low[u], disc[v]);
         }
 
-        
-        int poppedItem = 0;
         if (low[u] == disc[u])
         {
-            ++sccCount;
-            vector<int> v;
+            ++sccID;
             while (stk.top() != u)
             {
-
-                poppedItem = stk.top();
+                int poppedItem = stk.top();
                 int literal = mapIndexToLiteral[poppedItem];
                 // cout << literal << " ";
-                v.push_back(literal);
-                literalMappedToSCC[poppedItem] = sccCount;
+                literalMappedToSCC[poppedItem] = sccID;
 
                 stkItem[poppedItem] = false; //mark as item is popped
                 stk.pop();
+
+                if (poppedItem > numVars)
+                {
+                    if (literalMappedToSCC[poppedItem] == literalMappedToSCC[poppedItem - numVars])
+                    {
+                        sat = false;
+                        return;
+                    }
+                }
+                else
+                {
+                    if (literalMappedToSCC[poppedItem] == literalMappedToSCC[poppedItem + numVars])
+                    {
+                        sat = false;
+                        return;
+                    }
+                }
+                
+                sol[abs(literal) - 1] = literal < 0 ? true : false;
             }
 
-            poppedItem = stk.top();
+            int poppedItem = stk.top();
             int literal = mapIndexToLiteral[poppedItem];
             // cout << literal << endl;
-            v.push_back(literal);
-            literalMappedToSCC[poppedItem] = sccCount;
+            literalMappedToSCC[poppedItem] = sccID;
 
             stkItem[poppedItem] = false;
             stk.pop();
 
-            scc.push_back(v);
+            if (poppedItem > numVars)
+            {
+                if (literalMappedToSCC[poppedItem] == literalMappedToSCC[poppedItem - numVars])
+                {
+                    sat = false;
+                    return;
+                }
+            }
+            else
+            {
+                if (literalMappedToSCC[poppedItem] == literalMappedToSCC[poppedItem + numVars])
+                {
+                    sat = false;
+                    return;
+                }
+            }
+            sol[abs(literal) - 1] = literal < 0 ? true : false;
         }
     }
 
@@ -161,7 +190,7 @@ public:
         {
             if (disc[i] == -1)
             {
-                findComponentSets(i, disc, low, stk, stkItem);
+                findComponentSets(i, adjList, disc, low, stk, stkItem);
             }
         }
     }
@@ -171,55 +200,51 @@ public:
         buildAdjList();
         searchAllScc();
 
-        for(int i = 0; i < numVars; i++)
+        if (!sat)
         {
-            if(literalMappedToSCC[i] == literalMappedToSCC[i+numVars])
-            {
-                return false;
-            }
+            return false;
         }
 
-        for (int i = 0; i < scc.size(); i++)
+        for(int i = 0; i < sol.size(); i++)
         {
-            vector<int> component = scc[i];
-            for (int j = 0; j < component.size(); j++)
-            {
-                int literal = component[j];
-                if (result[abs(literal) - 1] == 9999999)
-                {
-                    result[abs(literal) - 1] = literal;
-                }
-            }
+            int literal = (sol[i] ? i + 1 : -(i + 1));
+            // cout << literal << " ";
+            result[i] = literal;
         }
 
         return true;
     }
+
+    bool sat{true};
+    static constexpr int MIN = std::numeric_limits<int>::min();
 };
 
 int main()
 {
+    static constexpr int MIN = std::numeric_limits<int>::min();
+
     // This code is here to increase the stack size to avoid stack overflow
     // in depth-first search.
-    const rlim_t kStackSize = 64L * 1024L * 1024L;  // min stack size = 64 Mb
+    const rlim_t kStackSize = 64L * 1024L * 1024L; // min stack size = 64 Mb
     struct rlimit rl;
-    int sresult;
-    sresult = getrlimit(RLIMIT_STACK, &rl);
-    if (sresult == 0)
+    int result;
+    result = getrlimit(RLIMIT_STACK, &rl);
+    if (result == 0)
     {
         if (rl.rlim_cur < kStackSize)
         {
             rl.rlim_cur = kStackSize;
-            sresult = setrlimit(RLIMIT_STACK, &rl);
-            if (sresult != 0)
+            result = setrlimit(RLIMIT_STACK, &rl);
+            if (result != 0)
             {
-                fprintf(stderr, "setrlimit returned result = %d\n", sresult);
+                fprintf(stderr, "setrlimit returned result = %d\n", result);
             }
         }
     }
 
     ios::sync_with_stdio(false);
 
-    // fstream cin("./tests/03");
+    // fstream cin("./tests/01");
 
     int n, m;
     cin >> n >> m;
@@ -229,13 +254,13 @@ int main()
         cin >> twoSat.clauses[i].firstVar >> twoSat.clauses[i].secondVar;
     }
 
-    vector<int> result(n, 9999999);
-    if (twoSat.isSatisfiable(result))
+    vector<int> satresult(n, MIN);
+    if (twoSat.isSatisfiable(satresult))
     {
         cout << "SATISFIABLE" << endl;
         for (int i = 0; i < n; ++i)
         {
-            cout << result[i] << " ";
+            cout << satresult[i] << " ";
         }
     }
     else
