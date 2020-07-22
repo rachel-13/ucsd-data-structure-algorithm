@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <fstream>
 #include <stack>
+#include <unordered_map>
 using namespace std;
 
 struct Clause
@@ -21,11 +22,11 @@ public:
 
 struct Vertex
 {
-    int literal;
-    int index;
-    int lowLink;
-    bool onStack;
-    vector<Edge> edges;
+    int index = -1;
+    int sccID = -1;
+    int lowLink = -1;
+    bool onStack = false;
+    vector<int> edges;
 };
 
 typedef vector<vector<int>> matrix;
@@ -35,13 +36,14 @@ struct TwoSatisfiability
 public:
     int numVars;
     vector<Clause> clauses;
-    vector<int> literalMappedToSCC;
-    int adjListSize = 2 * numVars;
-    matrix adjList;
-    vector<int> mapIndexToLiteral;
-    // matrix scc;
+
+    unordered_map<long, Vertex> map;
+    long adjListSize = 2 * numVars;
+    int poppedItem = 0;
     int sccID = 0;
-    std::vector<bool> sol;
+    int time = 0;
+    vector<bool> sol;
+    stack<long> stk;
 
     TwoSatisfiability(int n, int m) : numVars(n),
                                       clauses(m)
@@ -50,152 +52,81 @@ public:
 
     void buildAdjList()
     {
-        adjList = matrix(adjListSize);
-        mapIndexToLiteral = vector<int>(adjListSize);
-        literalMappedToSCC = vector<int>(adjListSize, -1);
+        map = unordered_map<long, Vertex>(adjListSize);
         sol = vector<bool>(numVars);
 
-        for (int i = 0; i < clauses.size(); i++)
+        for (long i = 0; i < clauses.size(); i++)
         {
             Edge edge1 = Edge();
             edge1.from = -(clauses[i].firstVar);
             edge1.to = clauses[i].secondVar;
+            
 
             Edge edge2 = Edge();
             edge2.from = -(clauses[i].secondVar);
             edge2.to = clauses[i].firstVar;
 
-            int adjListFrom1 = edge1.from - 1;
-            if (edge1.from < 0)
-            {
-                adjListFrom1 = (abs(edge1.from) - 1) + numVars;
-            }
-
-            int adjListTo1 = edge1.to - 1;
-            if (edge1.to < 0)
-            {
-                adjListTo1 = (abs(edge1.to) - 1) + numVars;
-            }
-
-            int adjListFrom2 = edge2.from - 1;
-            if (edge2.from < 0)
-            {
-                adjListFrom2 = (abs(edge2.from) - 1) + numVars;
-            }
-
-            int adjListTo2 = edge2.to - 1;
-            if (edge2.to < 0)
-            {
-                adjListTo2 = (abs(edge2.to) - 1) + numVars;
-            }
-
-            mapIndexToLiteral[adjListFrom1] = edge1.from;
-            mapIndexToLiteral[adjListTo1] = edge1.to;
-            mapIndexToLiteral[adjListFrom2] = edge2.from;
-            mapIndexToLiteral[adjListTo2] = edge2.to;
-
-            adjList[adjListFrom1].push_back(adjListTo1);
-            adjList[adjListFrom2].push_back(adjListTo2);
+            map[edge1.from].edges.push_back(edge1.to);
+            map[edge2.from].edges.push_back(edge2.to);
         }
     }
 
-    void findComponentSets(int u, matrix &adjList, vector<int> &disc, vector<int> &low, stack<int> &stk, vector<bool> &stkItem)
+    void findComponentSets(int u)
     {
-        static int time = 0;
-        disc[u] = low[u] = ++time; //inilially discovery time and low value is 1
+        // guided by https://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm
+        Vertex& u_info = map[u];
+        u_info.index = u_info.lowLink = ++time;
+        u_info.onStack = true;
         stk.push(u);
-        stkItem[u] = true; //flag as u in the stack
 
-        for (int i = 0; i < adjList[u].size(); i++)
-        {
-            auto& v = adjList[u][i];
-            if (disc[v] == -1)
+        for (auto v : u_info.edges)
+        {   
+            Vertex& nextV = map[v];
+            if (nextV.index == -1)
             { //when v is not visited
-                findComponentSets(v, adjList, disc, low, stk, stkItem);
-                low[u] = min(low[u], low[v]);
+                findComponentSets(v);
+                u_info.lowLink = std::min(u_info.lowLink, nextV.lowLink);
             }
-            else if (stkItem[v]) //when v is in the stack, update low for u
-                low[u] = min(low[u], disc[v]);
+            else if (nextV.onStack) //when v is in the stack, update low for u
+                u_info.lowLink = std::min(u_info.lowLink, nextV.index);
         }
 
-        if (low[u] == disc[u])
+        if (u_info.lowLink == u_info.index)
         {
-            ++sccID;
-            while (stk.top() != u)
+            do
             {
-                int poppedItem = stk.top();
-                int literal = mapIndexToLiteral[poppedItem];
-                // cout << literal << " ";
-                literalMappedToSCC[poppedItem] = sccID;
-
-                stkItem[poppedItem] = false; //mark as item is popped
+                poppedItem = stk.top();
                 stk.pop();
 
-                if (poppedItem > numVars)
-                {
-                    if (literalMappedToSCC[poppedItem] == literalMappedToSCC[poppedItem - numVars])
-                    {
-                        sat = false;
-                        return;
-                    }
-                }
-                else
-                {
-                    if (literalMappedToSCC[poppedItem] == literalMappedToSCC[poppedItem + numVars])
-                    {
-                        sat = false;
-                        return;
-                    }
-                }
-                
-                sol[abs(literal) - 1] = literal < 0 ? true : false;
-            }
-
-            int poppedItem = stk.top();
-            int literal = mapIndexToLiteral[poppedItem];
-            // cout << literal << endl;
-            literalMappedToSCC[poppedItem] = sccID;
-
-            stkItem[poppedItem] = false;
-            stk.pop();
-
-            if (poppedItem > numVars)
-            {
-                if (literalMappedToSCC[poppedItem] == literalMappedToSCC[poppedItem - numVars])
+                if (sccID == map[-poppedItem].sccID)
                 {
                     sat = false;
                     return;
                 }
-            }
-            else
-            {
-                if (literalMappedToSCC[poppedItem] == literalMappedToSCC[poppedItem + numVars])
-                {
-                    sat = false;
-                    return;
-                }
-            }
-            sol[abs(literal) - 1] = literal < 0 ? true : false;
+
+                // cout << poppedItem << " ";
+                Vertex& v_info = map[poppedItem];
+                v_info.sccID = sccID;
+                v_info.onStack = false; //mark as item is popped
+                sol[abs(poppedItem) - 1] = poppedItem < 0 ? true : false;
+            } while (poppedItem != u);
+            // cout << "\n";
+            ++sccID;
         }
     }
 
     void searchAllScc()
     {
-        vector<int> disc(adjListSize, -1);
-        vector<int> low(adjListSize, -1);
-        vector<bool> stkItem(adjListSize, false);
-        stack<int> stk;
-
-        for (int i = 0; i < adjListSize; i++) //initialize all elements
+        for (int i = -numVars; i <= numVars; ++i) //initialize all elements
         {
-            if (disc[i] == -1)
+            if (map[i].index == -1 && i != 0)
             {
-                findComponentSets(i, adjList, disc, low, stk, stkItem);
+                findComponentSets(i);
             }
         }
     }
 
-    bool isSatisfiable(vector<int> &result)
+    bool isSatisfiable(vector<long> &result)
     {
         buildAdjList();
         searchAllScc();
@@ -205,10 +136,9 @@ public:
             return false;
         }
 
-        for(int i = 0; i < sol.size(); i++)
+        for (unsigned int i = 0; i < sol.size(); i++)
         {
             int literal = (sol[i] ? i + 1 : -(i + 1));
-            // cout << literal << " ";
             result[i] = literal;
         }
 
@@ -221,7 +151,6 @@ public:
 
 int main()
 {
-    static constexpr int MIN = std::numeric_limits<int>::min();
 
     // This code is here to increase the stack size to avoid stack overflow
     // in depth-first search.
@@ -254,7 +183,7 @@ int main()
         cin >> twoSat.clauses[i].firstVar >> twoSat.clauses[i].secondVar;
     }
 
-    vector<int> satresult(n, MIN);
+    vector<long> satresult(n);
     if (twoSat.isSatisfiable(satresult))
     {
         cout << "SATISFIABLE" << endl;
