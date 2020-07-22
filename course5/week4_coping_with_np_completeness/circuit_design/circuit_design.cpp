@@ -73,7 +73,10 @@ public:
 
     void findComponentSets(int u)
     {
-        // guided by https://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm
+        // initial attempt was following this: https://www.tutorialspoint.com/Tarjan-s-Algorithm-for-Strongly-Connected-Components using
+        // adjacency matrix but grader ran out of memory, switched over to adjacency list, but ran into a lot of issues with `unknown signal 11`
+        // probably due to messing around with too many vectors recursing causing segmentation fault
+        // decided to follow https://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm in the end
         Vertex& u_info = map[u];
         u_info.index = u_info.lowLink = ++time;
         u_info.onStack = true;
@@ -151,7 +154,6 @@ public:
 
 int main()
 {
-
     // This code is here to increase the stack size to avoid stack overflow
     // in depth-first search.
     const rlim_t kStackSize = 64L * 1024L * 1024L; // min stack size = 64 Mb
