@@ -75,7 +75,8 @@ public:
     {
         // initial attempt was following this: https://www.tutorialspoint.com/Tarjan-s-Algorithm-for-Strongly-Connected-Components using
         // adjacency matrix but grader ran out of memory, switched over to adjacency list, but ran into a lot of issues with `unknown signal 11`
-        // probably due to messing around with too many vectors recursing causing segmentation fault
+        // perhaps it was how literals were mapped into array like this [1,2,3,-1,-2,-3] == [0,1,2,3,4,5] as indices and 
+        // reversing them which caused stackoverflow or perhaps there was an error processing a global vector while recursing
         // decided to follow https://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm in the end
         Vertex& u_info = map[u];
         u_info.index = u_info.lowLink = ++time;
