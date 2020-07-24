@@ -15,12 +15,13 @@ Graph ReadTree()
 {
     int vertices_count;
 
-    // std::fstream file("./tests/03");
+    std::fstream file("./tests/03");
 
-    // if (file.is_open())
-    // {
-    //     std::cin.rdbuf(file.rdbuf());
-    // }
+    if (file.is_open())
+    {
+        std::cin.rdbuf(file.rdbuf());
+    }
+
     std::cin >> vertices_count;
 
     Graph tree(vertices_count);
@@ -39,7 +40,7 @@ Graph ReadTree()
     return tree;
 }
 
-int dfs(const Graph &tree, int vertex, int parent, vector<int> &maxWeightArr, vector<bool> &visitedNodes)
+int dfs(const Graph &tree, int vertex, int parent, vector<int> &maxWeightArr)
 {
     if (maxWeightArr[vertex] == -1)
     {
@@ -61,7 +62,7 @@ int dfs(const Graph &tree, int vertex, int parent, vector<int> &maxWeightArr, ve
                 {
                     if(grandchild != vertex)
                     {
-                        m1 = m1 + dfs(tree, grandchild, child, maxWeightArr, visitedNodes);
+                        m1 = m1 + dfs(tree, grandchild, child, maxWeightArr);
                     }
                 }
             }
@@ -74,7 +75,7 @@ int dfs(const Graph &tree, int vertex, int parent, vector<int> &maxWeightArr, ve
                 {
                     continue;
                 }
-                m0 = m0 + dfs(tree, child, vertex, maxWeightArr, visitedNodes);
+                m0 = m0 + dfs(tree, child, vertex, maxWeightArr);
             }
 
             maxWeightArr[vertex] = max(m0,m1);
@@ -93,9 +94,8 @@ int MaxWeightIndependentTreeSubset(const Graph &tree)
     }
 
     vector<int> maxWeightArr(tree.size(), -1);
-    vector<bool> visitedNodes(tree.size(), false);
 
-    return dfs(tree, 0, -1, maxWeightArr, visitedNodes);;
+    return dfs(tree, 0, -1, maxWeightArr);;
 }
 
 int main()
